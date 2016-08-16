@@ -72,7 +72,7 @@ static char* server_groups[] =
 
 int config_load(char *);
 void config_enable_feedback_task(void);
-int module_create_feedback_report(GWBUF **buffer, MODULES *modules, FEEDBACK_CONF *cfg);
+int module_create_feedback_report(GWBUF **buffer, MODULE *modules, FEEDBACK_CONF *cfg);
 int do_http_post(GWBUF *buffer, void *cfg);
 
 int main(int argc, char** argv)

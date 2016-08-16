@@ -38,18 +38,17 @@ EXTERN_C_BLOCK_BEGIN
  * @endverbatim
  */
 
-typedef struct modules
+/**
+ * A structure that represents a loaded module
+ */
+typedef struct module
 {
-    char    *module;    /**< The name of the module */
-    char    *type;      /**< The module type */
-    char    *version;   /**< Module version */
-    void    *handle;    /**< The handle returned by dlopen */
-    void    *modobj;    /**< The module "object" this is the set of entry points */
-    MODULE_INFO
-    *info;      /**< The module information */
-    struct  modules
-        *next;      /**< Next module in the linked list */
-} MODULES;
+    char            *name;        /**< The name of the module */
+    const char      *type;        /**< The module type */
+    void            *handle;      /**< The handle returned by dlopen */
+    MODULE_INFO     *info;        /**< The module information */
+    struct  module  *next;        /**< Next module in the linked list */
+} MODULE;
 
 /**
  * Module types

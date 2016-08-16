@@ -47,17 +47,15 @@
 #include <gwdirs.h>
 #include <maxscale/alloc.h>
 
-static MODULES *registered = NULL;
+static MODULE *registered = NULL;
 
-static MODULES *find_module(const char *module);
+static MODULE *find_module(const char *module);
 static void register_module(const char *module,
-                            const char  *type,
-                            void        *dlhandle,
-                            char        *version,
-                            void        *modobj,
-                            MODULE_INFO *info);
+                            const char *type,
+                            void *dlhandle,
+                            MODULE_INFO *mod_info);
 static void unregister_module(const char *module);
-int module_create_feedback_report(GWBUF **buffer, MODULES *modules, FEEDBACK_CONF *cfg);
+int module_create_feedback_report(GWBUF **buffer, MODULE *modules, FEEDBACK_CONF *cfg);
 int do_http_post(GWBUF *buffer, void *cfg);
 
 struct MemoryStruct
@@ -114,142 +112,124 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
  * @return              The module specific entry point structure or NULL
  */
 void *
-load_module(const char *module, const char *type)
+load_module(const char *name, const char *type)
 {
-    char *home, *version;
-    char fname[MAXPATHLEN + 1];
-    void *dlhandle, *sym;
-    char *(*ver)();
-    void *(*ep)(), *modobj;
-    MODULES *mod;
-    MODULE_INFO *mod_info = NULL;
-
-    if (NULL == module || NULL == type)
+    ss_dassert(name && type);
+    if (NULL == name || NULL == type)
     {
         return NULL;
     }
 
-    if ((mod = find_module(module)) == NULL)
-    {
-        /*<
-         * The module is not already loaded
-         *
-         * Search of the shared object.
-         */
+    void* modobj = NULL;
+    MODULE *mod = find_module(name);
 
-        snprintf(fname, MAXPATHLEN + 1, "%s/lib%s.so", get_libdir(), module);
+    if (mod == NULL)
+    {
+        /** The module is not loaded, search of the shared object */
+        char fname[MAXPATHLEN + 1];
+        snprintf(fname, MAXPATHLEN + 1, "%s/lib%s.so", get_libdir(), name);
 
         if (access(fname, F_OK) == -1)
         {
-            MXS_ERROR("Unable to find library for "
-                      "module: %s. Module dir: %s",
-                      module, get_libdir());
+            MXS_ERROR("Unable to find library for module: %s. Module dir: %s",
+                      name, get_libdir());
             return NULL;
         }
 
-        if ((dlhandle = dlopen(fname, RTLD_NOW | RTLD_LOCAL)) == NULL)
+        void *dlhandle = dlopen(fname, RTLD_NOW | RTLD_LOCAL);
+
+        if (dlhandle == NULL)
         {
-            MXS_ERROR("Unable to load library for module: "
-                      "%s\n\n\t\t      %s."
-                      "\n\n",
-                      module,
-                      dlerror());
+            MXS_ERROR("Unable to load library for module: %s\n\n\t\t      %s.\n\n",
+                      name, dlerror());
             return NULL;
         }
 
-        if ((sym = dlsym(dlhandle, "version")) == NULL)
-        {
-            MXS_ERROR("Version interface not supported by "
-                      "module: %s\n\t\t\t      %s.",
-                      module,
-                      dlerror());
-            dlclose(dlhandle);
-            return NULL;
-        }
-        ver = sym;
-        version = ver();
+        MODULE_INFO *(*get_mod_info)(void) = dlsym(dlhandle, "mxs_get_module_info");
 
-        /*
-         * If the module has a ModuleInit function cal it now.
-         */
-        if ((sym = dlsym(dlhandle, "ModuleInit")) != NULL)
-        {
-            void (*ModuleInit)() = sym;
-            ModuleInit();
-        }
-
-        if ((sym = dlsym(dlhandle, "info")) != NULL)
+        if (get_mod_info)
         {
             int fatal = 0;
-            mod_info = sym;
-            if (strcmp(type, MODULE_PROTOCOL) == 0
-                && mod_info->modapi != MODULE_API_PROTOCOL)
+            MODULE_INFO *mod_info = get_mod_info();
+
+            if (mod_info)
             {
-                MXS_ERROR("Module '%s' does not implement the protocol API.", module);
-                fatal = 1;
-            }
-            if (strcmp(type, MODULE_AUTHENTICATOR) == 0
-                && mod_info->modapi != MODULE_API_AUTHENTICATOR)
-            {
-                MXS_ERROR("Module '%s' does not implement the authenticator API.", module);
-                fatal = 1;
-            }
-            if (strcmp(type, MODULE_ROUTER) == 0
-                && mod_info->modapi != MODULE_API_ROUTER)
-            {
-                MXS_ERROR("Module '%s' does not implement the router API.", module);
-                fatal = 1;
-            }
-            if (strcmp(type, MODULE_MONITOR) == 0
-                && mod_info->modapi != MODULE_API_MONITOR)
-            {
-                MXS_ERROR("Module '%s' does not implement the monitor API.", module);
-                fatal = 1;
-            }
-            if (strcmp(type, MODULE_FILTER) == 0
-                && mod_info->modapi != MODULE_API_FILTER)
-            {
-                MXS_ERROR("Module '%s' does not implement the filter API.", module);
-                fatal = 1;
-            }
-            if (strcmp(type, MODULE_QUERY_CLASSIFIER) == 0
-                && mod_info->modapi != MODULE_API_QUERY_CLASSIFIER)
-            {
-                MXS_ERROR("Module '%s' does not implement the query classifier API.", module);
-                fatal = 1;
-            }
-            if (fatal)
-            {
-                dlclose(dlhandle);
-                return NULL;
+                if (strcmp(type, MODULE_PROTOCOL) == 0
+                    && mod_info->modapi != MODULE_API_PROTOCOL)
+                {
+                    MXS_ERROR("Module '%s' does not implement the protocol API.", name);
+                    fatal = 1;
+                }
+                else if (strcmp(type, MODULE_AUTHENTICATOR) == 0
+                         && mod_info->modapi != MODULE_API_AUTHENTICATOR)
+                {
+                    MXS_ERROR("Module '%s' does not implement the authenticator API.", name);
+                    fatal = 1;
+                }
+                else if (strcmp(type, MODULE_ROUTER) == 0
+                         && mod_info->modapi != MODULE_API_ROUTER)
+                {
+                    MXS_ERROR("Module '%s' does not implement the router API.", name);
+                    fatal = 1;
+                }
+                else if (strcmp(type, MODULE_MONITOR) == 0
+                         && mod_info->modapi != MODULE_API_MONITOR)
+                {
+                    MXS_ERROR("Module '%s' does not implement the monitor API.", name);
+                    fatal = 1;
+                }
+                else if (strcmp(type, MODULE_FILTER) == 0
+                         && mod_info->modapi != MODULE_API_FILTER)
+                {
+                    MXS_ERROR("Module '%s' does not implement the filter API.", name);
+                    fatal = 1;
+                }
+                else if (strcmp(type, MODULE_QUERY_CLASSIFIER) == 0
+                         && mod_info->modapi != MODULE_API_QUERY_CLASSIFIER)
+                {
+                    MXS_ERROR("Module '%s' does not implement the query classifier API.", name);
+                    fatal = 1;
+                }
+
+                if (mod_info->moduleinit && mod_info->moduleinit() != 0)
+                {
+                    MXS_ERROR("Call to 'moduleinit' for module '%s' failed. Read "
+                              "earlier error messages or module documentation "
+                              "for a possible explanation.", name);
+                    fatal = 1;
+                }
+
+                if (fatal)
+                {
+                    dlclose(dlhandle);
+                    return NULL;
+                }
+                else
+                {
+                    MXS_NOTICE("Loaded module %s version %s (API version %d.%d.%d) from %s",
+                               name, mod_info->version, mod_info->api_version.major,
+                               mod_info->api_version.minor, mod_info->api_version.patch, fname);
+
+                    register_module(name, type, dlhandle, mod_info);
+                    modobj = mod_info->object;
+                }
             }
         }
-
-        if ((sym = dlsym(dlhandle, "GetModuleObject")) == NULL)
+        else
         {
-            MXS_ERROR("Expected entry point interface missing "
-                      "from module: %s\n\t\t\t      %s.",
-                      module,
-                      dlerror());
+            MXS_ERROR("Unable to find symbol for module entry point. Module: %s Error: %s",
+                      name, dlerror());
             dlclose(dlhandle);
             return NULL;
         }
-        ep = sym;
-        modobj = ep();
-
-        MXS_NOTICE("Loaded module %s: %s from %s",
-                   module,
-                   version,
-                   fname);
-        register_module(module, type, dlhandle, version, modobj, mod_info);
     }
     else
     {
-        /*
-         * The module is already loaded, get the entry points again and
-         * return a reference to the already loaded module.
+        /**
+         * The module is already loaded, get the entry points again and return a
+         * reference to the already loaded module.
          */
-        modobj = mod->modobj;
+        modobj = mod->info->object;
     }
 
     return modobj;
@@ -264,9 +244,9 @@ load_module(const char *module, const char *type)
  * @param module        The name of the module
  */
 void
-unload_module(const char *module)
+unload_module(const char *name)
 {
-    MODULES *mod = find_module(module);
+    MODULE *mod = find_module(name);
     void *handle;
 
     if (!mod)
@@ -274,7 +254,7 @@ unload_module(const char *module)
         return;
     }
     handle = mod->handle;
-    unregister_module(module);
+    unregister_module(name);
     dlclose(handle);
 }
 
@@ -285,16 +265,16 @@ unload_module(const char *module)
  * @param module        The name of the module
  * @return              The module handle or NULL if it was not found
  */
-static MODULES *
-find_module(const char *module)
+static MODULE *
+find_module(const char *name)
 {
-    MODULES *mod = registered;
+    MODULE *mod = registered;
 
-    if (module)
+    if (name)
     {
         while (mod)
         {
-            if (strcmp(mod->module, module) == 0)
+            if (strcmp(mod->name, name) == 0)
             {
                 return mod;
             }
@@ -314,38 +294,27 @@ find_module(const char *module)
  * @param module        The name of the module loaded
  * @param type          The type of the module loaded
  * @param dlhandle      The handle returned by dlopen
- * @param version       The version string returned by the module
- * @param modobj        The module object
  * @param mod_info      The module information
  */
 static void
-register_module(const char *module,
+register_module(const char *name,
                 const char *type,
                 void *dlhandle,
-                char *version,
-                void *modobj,
                 MODULE_INFO *mod_info)
 {
-    module = MXS_STRDUP(module);
-    type = MXS_STRDUP(type);
-    version = MXS_STRDUP(version);
+    char *my_module = MXS_STRDUP(name);
+    MODULE *mod = (MODULE *)MXS_MALLOC(sizeof(MODULE));
 
-    MODULES *mod = (MODULES *)MXS_MALLOC(sizeof(MODULES));
-
-    if (!module || !type || !version || !mod)
+    if (!my_module || !type || !mod)
     {
-        MXS_FREE((void*)module);
-        MXS_FREE((void*)type);
-        MXS_FREE(version);
+        MXS_FREE(my_module);
         MXS_FREE(mod);
         return;
     }
 
-    mod->module = (char*)module;
-    mod->type = (char*)type;
+    mod->name = my_module;
+    mod->type = type;
     mod->handle = dlhandle;
-    mod->version = version;
-    mod->modobj = modobj;
     mod->next = registered;
     mod->info = mod_info;
     registered = mod;
@@ -357,10 +326,10 @@ register_module(const char *module,
  * @param module        The name of the module to remove
  */
 static void
-unregister_module(const char *module)
+unregister_module(const char *name)
 {
-    MODULES *mod = find_module(module);
-    MODULES *ptr;
+    MODULE *mod = find_module(name);
+    MODULE *ptr;
 
     if (!mod)
     {
@@ -392,9 +361,7 @@ unregister_module(const char *module)
      * memory related to it can be freed
      */
     dlclose(mod->handle);
-    MXS_FREE(mod->module);
-    MXS_FREE(mod->type);
-    MXS_FREE(mod->version);
+    MXS_FREE(mod->name);
     MXS_FREE(mod);
 }
 
@@ -409,7 +376,7 @@ unload_all_modules()
 {
     while (registered)
     {
-        unregister_module(registered->module);
+        unregister_module(registered->name);
     }
 }
 
@@ -421,13 +388,13 @@ unload_all_modules()
 void
 printModules()
 {
-    MODULES *ptr = registered;
+    MODULE *ptr = registered;
 
     printf("%-15s | %-11s | Version\n", "Module Name", "Module Type");
     printf("-----------------------------------------------------\n");
     while (ptr)
     {
-        printf("%-15s | %-11s | %s\n", ptr->module, ptr->type, ptr->version);
+        printf("%-15s | %-11s | %s\n", ptr->name, ptr->type, ptr->info->version);
         ptr = ptr->next;
     }
 }
@@ -440,7 +407,7 @@ printModules()
 void
 dprintAllModules(DCB *dcb)
 {
-    MODULES *ptr = registered;
+    MODULE *ptr = registered;
 
     dcb_printf(dcb, "Modules.\n");
     dcb_printf(dcb, "----------------+-----------------+---------+-------+-------------------------\n");
@@ -448,7 +415,7 @@ dprintAllModules(DCB *dcb)
     dcb_printf(dcb, "----------------+-----------------+---------+-------+-------------------------\n");
     while (ptr)
     {
-        dcb_printf(dcb, "%-15s | %-15s | %-7s ", ptr->module, ptr->type, ptr->version);
+        dcb_printf(dcb, "%-15s | %-15s | %-7s ", ptr->name, ptr->type, ptr->info->version);
         if (ptr->info)
             dcb_printf(dcb, "| %d.%d.%d | %s",
                        ptr->info->api_version.major,
@@ -479,7 +446,7 @@ void
 moduleShowFeedbackReport(DCB *dcb)
 {
     GWBUF *buffer;
-    MODULES *modules_list = registered;
+    MODULE *modules_list = registered;
     FEEDBACK_CONF *feedback_config = config_get_feedback_data();
 
     if (!module_create_feedback_report(&buffer, modules_list, feedback_config))
@@ -506,7 +473,7 @@ moduleRowCallback(RESULTSET *set, void *data)
     int i = 0;;
     char *stat, buf[20];
     RESULT_ROW *row;
-    MODULES *ptr;
+    MODULE *ptr;
 
     ptr = registered;
     while (i < *rowno && ptr)
@@ -521,9 +488,9 @@ moduleRowCallback(RESULTSET *set, void *data)
     }
     (*rowno)++;
     row = resultset_make_row(set);
-    resultset_row_set(row, 0, ptr->module);
-    resultset_row_set(row, 1, ptr->type);
-    resultset_row_set(row, 2, ptr->version);
+    resultset_row_set(row, 0, ptr->name);
+    resultset_row_set(row, 1, (char*)ptr->type);
+    resultset_row_set(row, 2, (char*)ptr->info->version);
     snprintf(buf, 19, "%d.%d.%d", ptr->info->api_version.major,
              ptr->info->api_version.minor,
              ptr->info->api_version.patch);
@@ -580,7 +547,7 @@ moduleGetList()
 void
 module_feedback_send(void* data)
 {
-    MODULES *modules_list = registered;
+    MODULE *modules_list = registered;
     CURL *curl = NULL;
     CURLcode res;
     struct curl_httppost *formpost = NULL;
@@ -698,9 +665,9 @@ module_feedback_send(void* data)
  */
 
 int
-module_create_feedback_report(GWBUF **buffer, MODULES *modules, FEEDBACK_CONF *cfg)
+module_create_feedback_report(GWBUF **buffer, MODULE *modules, FEEDBACK_CONF *cfg)
 {
-    MODULES *ptr = modules;
+    MODULE *ptr = modules;
     int n_mod = 0;
     char *data_ptr = NULL;
     char hex_setup_info[2 * SHA_DIGEST_LENGTH + 1] = "";
@@ -764,20 +731,20 @@ module_create_feedback_report(GWBUF **buffer, MODULES *modules, FEEDBACK_CONF *c
     {
         snprintf(data_ptr, _NOTIFICATION_REPORT_ROW_LEN * 2,
                  "module_%s_type\t%s\nmodule_%s_version\t%s\n",
-                 ptr->module, ptr->type, ptr->module, ptr->version);
+                 ptr->name, ptr->type, ptr->name, ptr->info->version);
         data_ptr += strlen(data_ptr);
 
         if (ptr->info)
         {
             snprintf(data_ptr, _NOTIFICATION_REPORT_ROW_LEN, "module_%s_api\t%d.%d.%d\n",
-                     ptr->module,
+                     ptr->name,
                      ptr->info->api_version.major,
                      ptr->info->api_version.minor,
                      ptr->info->api_version.patch);
 
             data_ptr += strlen(data_ptr);
             snprintf(data_ptr, _NOTIFICATION_REPORT_ROW_LEN, "module_%s_releasestatus\t%s\n",
-                     ptr->module,
+                     ptr->name,
                      ptr->info->status == MODULE_IN_DEVELOPMENT
                      ? "In Development"
                      : (ptr->info->status == MODULE_ALPHA_RELEASE
@@ -925,4 +892,3 @@ cleanup:
 
     return ret_code;
 }
-
