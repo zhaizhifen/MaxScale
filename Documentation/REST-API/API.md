@@ -18,8 +18,14 @@ will be checked by the API for being close to the current date and time.
 
 #### Content-Type
 
-All PUT, POST and PATCH requests must provide the `Content-Type:
-application/json` header. Only JSON input is accepted for all API input.
+All PUT and POST requests must use the `Content-Type: application/json` media
+type and the request body must be a valid JSON representation of a resource. All
+PATCH requests must use the `Content-Type: application/json-patch` media type
+and the request body must be a valid JSON Patch document which is applied to the
+resource. Curently, only _add_, _remove_ and _replace_ operations are supported.
+
+Read the [JSON Patch](https://tools.ietf.org/html/draft-ietf-appsawg-json-patch-08)
+draft for more details on how to use it with PATCH.
 
 #### X-HTTP-Method-Override
 

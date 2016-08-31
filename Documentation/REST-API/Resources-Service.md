@@ -11,13 +11,13 @@ Get a single service. The _:name_ in the URI must be a valid service name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /services/:name
+GET /v1/services/:name
 ```
 
 Get the owning service of a session. _:id_ must be a valid session ID.
 
 ```
-GET /session/:id/services
+GET /v1/session/:id/services
 ```
 
 #### Response
@@ -25,25 +25,25 @@ GET /session/:id/services
 ```
 Status: 200 OK
 
-[
-    {
-        "name": "My Service",
-        "router": "readwritesplit",
-        "router_options": "disable_sescmd_history=true",
-        "state": "started",
-        "total_connections": 10,
-        "current_connections": 2,
-        "started": "2016-08-29T12:52:31+03:00",
-        "filters": [
-            "Query Logging Filter"
-        ],
-        "servers": [
-            "db-serv-1",
-            "db-serv-2",
-            "db-serv-3"
-        ]
-    }
-]
+{
+    "name": "My Service",
+    "router": "readwritesplit",
+    "router_options": {
+        "disable_sescmd_history": "true"
+    },
+    "state": "started",
+    "total_connections": 10,
+    "current_connections": 2,
+    "started": "2016-08-29T12:52:31+03:00",
+    "filters": [
+        "Query Logging Filter"
+    ],
+    "servers": [
+        "db-serv-1",
+        "db-serv-2",
+        "db-serv-3"
+    ]
+}
 ```
 
 ### Get all services
@@ -51,7 +51,7 @@ Status: 200 OK
 Get all services.
 
 ```
-GET /services
+GET /v1/services
 ```
 
 #### Response
@@ -63,7 +63,9 @@ Status: 200 OK
     {
         "name": "My Service",
         "router": "readwritesplit",
-        "router_options": "disable_sescmd_history=true",
+        "router_options": {
+            "disable_sescmd_history": "true"
+        },
         "state": "started",
         "total_connections": 10,
         "current_connections": 2,
@@ -80,7 +82,9 @@ Status: 200 OK
     {
         "name": "My Second Service",
         "router": "readconnroute",
-        "router_options": "master",
+        "router_options": {
+            "type": "master"
+        },
         "state": "started",
         "total_connections": 10,
         "current_connections": 2,
@@ -95,50 +99,48 @@ Status: 200 OK
 
 ### Update a service
 
-Partially update a service. The _:name_ in the URI must map to a service name.
+Partially update a service. The _:name_ in the URI must map to a service name
+and the request body must be a valid JSON Patch document which is applied to the
+resource.
 
 ```
-PATCH /services/:name
+PATCH /v1/services/:name
 ```
 
-### Input
-
-At least one of the following fields must be provided in the request body. Only
-the provided fields in the service are modified.
+### Modifiable Fields
 
 |Field         |Type        |Description                                        |
 |--------------|------------|---------------------------------------------------|
 |servers       |string array|Servers used by this service                       |
 |state         |string      |State of the service, either `started` or `stopped`|
-|router_options|string array|Router specific options                            |
-|filters       |string array|Service filters, configured in the same order they are declared in the array (`filters[0]` => first filter, `filters[1]` => second filter), `null` for no filters|
+|router_options|object      |Router specific options                            |
+|filters       |string array|Service filters, configured in the same order they are declared in the array (`filters[0]` => first filter, `filters[1]` => second filter)|
 
 ```
-{
-    "servers": [
-        "db-serv-2",
-        "db-serv-3"
-    ],
-    "state": "started",
-    "router_options": [
-        "disable_sescmd_history": "false",
-        "master_failover_mode": "fail_on_write"
-    ],
-    "filters": null
-}
+[
+    { "op": "replace", "path": "/servers", "value": ["db-serv-2","db-serv-3"] },
+    { "op": "replace", "path": "/state", "value": "started" },
+    { "op": "add", "path": "/router_options/master_failover_mode", "value": "fail_on_write" },
+    { "op": "remove", "path": "/filters" }
+]
 ```
+
 _TODO: Add common service parameters_
 
 #### Response
 
+Response contains the modified resource.
+
 ```
 Status: 200 OK
 
-[
     {
         "name": "My Service",
         "router": "readwritesplit",
-        "router_options": "disable_sescmd_history=false"
+        "router_options": {
+            "disable_sescmd_history=false",
+            "master_failover_mode": "fail_on_write"
+        }
         "state": "started",
         "total_connections": 10,
         "current_connections": 2,
@@ -148,7 +150,6 @@ Status: 200 OK
             "db-serv-3"
         ]
     }
-]
 ```
 
 ### Close all sessions for a service
@@ -157,7 +158,7 @@ Close all sessions for a particular service. This will forcefully close all
 client connections and any backend connections they have made.
 
 ```
-DELETE /services/:name/session
+DELETE /v1/services/:name/sessions
 ```
 
 #### Response

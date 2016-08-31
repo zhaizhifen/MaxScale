@@ -38,7 +38,7 @@ Create a new administrative user.
 POST /users
 ```
 
-### Input
+### Modifiable Fields
 
 All of the following fields need to be defined in the request body.
 

@@ -11,7 +11,7 @@ Get a single filter. The _:name_ in the URI must be a valid filter name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /filters/:name
+GET /v1/filters/:name
 ```
 
 #### Response
@@ -19,20 +19,18 @@ GET /filters/:name
 ```
 Status: 200 OK
 
-[
-    {
-        "name": "Query Logging Filter",
-        "module": "qlafilter",
-        "parameters": {
-            "filebase": "/var/log/maxscale/qla/log.",
-            "match": "select.*from.*t1"
-        }
-        "services": [
-            "My Service",
-            "My Second Service"
-        ]
+{
+    "name": "Query Logging Filter",
+    "module": "qlafilter",
+    "parameters": {
+        "filebase": "/var/log/maxscale/qla/log.",
+        "match": "select.*from.*t1"
     }
-]
+    "services": [
+        "My Service",
+        "My Second Service"
+    ]
+}
 ```
 
 ### Get all filters
@@ -40,7 +38,7 @@ Status: 200 OK
 Get all filters.
 
 ```
-GET /filters
+GET /v1/filters
 ```
 
 #### Response
@@ -76,48 +74,43 @@ Status: 200 OK
 
 ### Update a filter
 
-Partially update a filter. The _:name_ in the URI must be a valid filter name
-in lowercase with all whitespace replaced with underscores.
+Partially update a filter. The _:name_ in the URI must map to a filter name
+and the request body must be a valid JSON Patch document which is applied to the
+resource.
 
 ```
-PATCH /filter/:name
+PATCH /v1/filter/:name
 ```
 
-### Input
+### Modifiable Fields
 
-The _parameters_ field must always be defined. If the filter requires no
-parameters, the value of _parameters_ should be `null`.
-
-|Field       |Type        |Description      |
-|------------|------------|-----------------|
-|parameters  |string array|Module specific filter parameters|
+|Field       |Type   |Description                      |
+|------------|-------|---------------------------------|
+|parameters  |object |Module specific filter parameters|
 
 ```
-{
-    "parameters": {
-        "rules": "/etc/maxscale-rules",
-        "action": "allow"
-    }
-
-}
+[
+    { "op": "replace", "path": "/parameters/rules", "value": "/etc/new-rules" },
+    { "op": "add", "path": "/parameters/action", "value": "allow" }
+]
 ```
 
 #### Response
 
+Response contains the modified resource.
+
 ```
 Status: 200 OK
 
-[
-    {
-        "name": "DBFW Filter",
-        "module": "dbfwfilter",
-        "parameters": {
-            "rules": "/etc/maxscale-rules",
-            "action": "allow"
-        }
-        "services": [
-            "My Second Service"
-        ]
+{
+    "name": "DBFW Filter",
+    "module": "dbfwfilter",
+    "parameters": {
+        "rules": "/etc/new-rules",
+        "action": "allow"
     }
-]
+    "services": [
+        "My Second Service"
+    ]
+}
 ```
