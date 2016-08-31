@@ -11,13 +11,13 @@ Get a single service. The _:name_ in the URI must be a valid service name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /service/:name
+GET /services/:name
 ```
 
 Get the owning service of a session. _:id_ must be a valid session ID.
 
 ```
-GET /session/:id/service
+GET /session/:id/services
 ```
 
 #### Response
@@ -34,6 +34,9 @@ Status: 200 OK
         "total_connections": 10,
         "current_connections": 2,
         "started": "2016-08-29T12:52:31+03:00",
+        "filters": [
+            "Query Logging Filter"
+        ],
         "servers": [
             "db-serv-1",
             "db-serv-2",
@@ -48,7 +51,7 @@ Status: 200 OK
 Get all services.
 
 ```
-GET /service
+GET /services
 ```
 
 #### Response
@@ -65,6 +68,9 @@ Status: 200 OK
         "total_connections": 10,
         "current_connections": 2,
         "started": "2016-08-29T12:52:31+03:00",
+        "filters": [
+            "Query Logging Filter"
+        ],
         "servers": [
             "db-serv-1",
             "db-serv-2",
@@ -92,7 +98,7 @@ Status: 200 OK
 Partially update a service. The _:name_ in the URI must map to a service name.
 
 ```
-PATCH /service/:name
+PATCH /services/:name
 ```
 
 ### Input
@@ -104,7 +110,8 @@ the provided fields in the service are modified.
 |--------------|------------|---------------------------------------------------|
 |servers       |string array|Servers used by this service                       |
 |state         |string      |State of the service, either `started` or `stopped`|
-|router_options|string      |Router specific options                            |
+|router_options|string array|Router specific options                            |
+|filters       |string array|Service filters, configured in the same order they are declared in the array (`filters[0]` => first filter, `filters[1]` => second filter), `null` for no filters|
 
 ```
 {
@@ -113,9 +120,14 @@ the provided fields in the service are modified.
         "db-serv-3"
     ],
     "state": "started",
-    "router_options": "disable_sescmd_history=false"
+    "router_options": [
+        "disable_sescmd_history": "false",
+        "master_failover_mode": "fail_on_write"
+    ],
+    "filters": null
 }
 ```
+_TODO: Add common service parameters_
 
 #### Response
 
@@ -137,4 +149,19 @@ Status: 200 OK
         ]
     }
 ]
+```
+
+### Close all sessions for a service
+
+Close all sessions for a particular service. This will forcefully close all
+client connections and any backend connections they have made.
+
+```
+DELETE /services/:name/session
+```
+
+#### Response
+
+```
+Status: 204 No Content
 ```
