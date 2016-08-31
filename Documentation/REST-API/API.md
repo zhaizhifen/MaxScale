@@ -1,6 +1,7 @@
 # REST API design document
 
-This document describes the version 1 of the MaxScale REST API.
+This document describes the version 1 of the MaxScale REST API. The version 1
+API is accessed though the `/v1` entry point.
 
 ## HTTP Headers
 
@@ -68,12 +69,13 @@ field contains a more detailed version of the error message.
 
 ## Resources
 
-- [/services](Resources-Service.md)
-- [/servers](Resources-Server.md)
-- [/filters](Resources-Filter.md)
-- [/monitors](Resources-Monitor.md)
-- [/sessions](Resources-Session.md)
-- [/users](Resources-User.md)
+- [/v1/maxscale](Resources-MaxScale.md)
+- [/v1/services](Resources-Service.md)
+- [/v1/servers](Resources-Server.md)
+- [/v1/filters](Resources-Filter.md)
+- [/v1/monitors](Resources-Monitor.md)
+- [/v1/sessions](Resources-Session.md)
+- [/v1/users](Resources-User.md)
 
 -----
 
