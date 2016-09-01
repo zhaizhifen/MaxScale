@@ -11,7 +11,7 @@ Retrieve global information about a MaxScale instance. This includes various
 file locations, configuration options and version information.
 
 ```
-GET /v1/maxscale
+GET /maxscale
 ```
 
 #### Response
@@ -58,7 +58,7 @@ Status: 200 OK
 Get detailed information and statistics about the threads.
 
 ```
-GET /v1/maxscale/threads
+GET /maxscale/threads
 ```
 
 #### Response

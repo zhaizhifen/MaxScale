@@ -3,6 +3,18 @@
 This document describes the version 1 of the MaxScale REST API. The version 1
 API is accessed though the `/v1` entry point.
 
+## Table of Contents
+
+- [HTTP Headers](#http-headers)
+  - [Request Headers](#request-headers)
+  - [Response Headers](#response-headers)
+- [Response Codes](#response-codes)
+  - [2xx Success](#2xx-success)
+  - [3xx Redirection](#3xx-redirection)
+  - [4xx Client Error](#4xx-client-error)
+  - [5xx Server Error](#5xx-server-error)
+- [Resources](#resources)
+
 ## HTTP Headers
 
 ### Request Headers
@@ -11,11 +23,13 @@ REST makes use of the HTTP protocols in its aim to provide a natural way to
 understand the workings of an API. The following request headers are understood
 by this API.
 
-#### Date
+#### Accept-Charset
 
-This header is required and should be in the RFC 1123 standard form, e.g. Mon,
-18 Nov 2013 08:14:29 -0600. Please note that the date must be in English. It
-will be checked by the API for being close to the current date and time.
+Acceptable character sets.
+
+#### Authorization
+
+Credentials for authentication.
 
 #### Content-Type
 
@@ -28,6 +42,51 @@ resource. Curently, only _add_, _remove_ and _replace_ operations are supported.
 Read the [JSON Patch](https://tools.ietf.org/html/draft-ietf-appsawg-json-patch-08)
 draft for more details on how to use it with PATCH.
 
+#### Date
+
+This header is required and should be in the RFC 1123 standard form, e.g. Mon,
+18 Nov 2013 08:14:29 -0600. Please note that the date must be in English. It
+will be checked by the API for being close to the current date and time.
+
+#### Host
+
+The address and port of the server.
+
+#### If-Match
+
+The request is performed only if the provided ETag value matches the one on the
+server. This field should be used with PUT requests to prevent concurrent
+updates to the same resource.
+
+The value of this header must be a value from the `ETag` header retrieved from
+the same resource at an earlier point in time.
+
+#### If-Modified-Since
+
+If the content has not changed the server responds with a 304 status code.  If
+the content has changed the server responds with a 200 status code and the
+requested resource.
+
+The value of this header must be a date value in the
+["HTTP-date"](https://www.ietf.org/rfc/rfc2822.txt) format.
+
+#### If-None-Match
+
+If the content has not changed the server responds with a 304 status code.  If
+the content has changed the server responds with a 200 status code and the
+requested resource.
+
+The value of this header must be a value from the `ETag` header retrieved from
+the same resource at an earlier point in time.
+
+#### If-Unmodified-Since
+
+The request is performed only if the requested resource has not been modified
+since the provided date.
+
+The value of this header must be a date value in the
+["HTTP-date"](https://www.ietf.org/rfc/rfc2822.txt) format.
+
 #### X-HTTP-Method-Override
 
 Some clients only support GET and PUT requests. By providing the string value of
@@ -39,97 +98,327 @@ TODO: Add the rest
 
 ### Response Headers
 
-TODO: Figure these out
+#### Allow
+
+All resources return the Allow header with the supported HTTP methods. For
+example the resource `/service` will always return the `Accept: GET, PATCH, PUT`
+header.
+
+#### Accept-Patch
+
+All PATCH capable resources return the `Accept-Patch: application/json-patch`
+header.
+
+#### Date
+
+Returns the RFC 1123 standard form date when the reply was sent. The date is in
+English and it uses the server's local timezone.
+
+#### ETag
+
+An identifier for a specific version of a resource. The value of this header
+changes whenever a resource is modified.
+
+When the client sends the `If-Match` or `If-None-Match` header, the provided
+value should be the value of the `ETag` header of an earlier GET.
+
+#### Last-Modified
+
+The date when the resource was last modified in "HTTP-date" format.
+
+#### Location
+
+If an out of date resource location is requested, a HTTP return code of 3XX with
+the `Location` header is returned. The value of the header contains the new
+location of the requested resource as a relative URI.
+
+#### WWW-Authenticate
+
+The requested authentication method. For example, `WWW-Authenticate: Basic`
+would require basic HTTP authentication.
 
 ## Response Codes
 
 Every HTTP response starts with a line with a return code which indicates the
 outcome of the request. The API uses some of the standard HTTP values:
 
-* 200 OK
-* 204 No Content
-* 400 Bad Request – this includes validation failures
-* 401 Unauthorized
-* 404 Not Found
-* 405 Method Not Allowed
-* 409 Conflict – the request is inconsistent with known constraints
-* 429 Too Mary Requests - Too many requests were performed within the allowed time interval
-* 500 Internal Server Error
+### 2xx Success
 
-All responses with a code of 400 or higher return the error as the response
-body. The _error_ field contains a short error description and the _description_
-field contains a more detailed version of the error message.
+- 200 OK
+
+  - Successful HTTP requests, response has a body.
+
+- 201 Created
+
+  - A new resource was created.
+
+- 202 Accepted
+
+  - The request has been accepted for processing, but the processing has not
+    been completed.
+
+- 204 No Content
+
+  - Successful HTTP requests, response has no body.
+
+### 3xx Redirection
+
+This class of status code indicates the client must take additional action to
+complete the request.
+
+- 301 Moved Permanently
+
+  - This and all future requests should be directed to the given URI.
+
+- 302 Found
+
+  - The response to the request can be found under another URI using the same
+    method as in the original request.
+
+- 303 See Other
+
+  - The response to the request can be found under another URI using a GET
+    method.
+
+- 304 Not Modified
+
+  - Indicates that the resource has not been modified since the version
+    specified by the request headers If-Modified-Since or If-None-Match.
+
+- 307 Temporary Redirect
+
+  - The request should be repeated with another URI but future requests should
+    use the original URI.
+
+- 308 Permanent Redirect
+
+  - The request and all future requests should be repeated using another URI.
+
+### 4xx Client Error
+
+The 4xx class of status code is when the client seems to have erred. Except when
+responding to a HEAD request, the body of the response contains a JSON
+representation of the error in the following format.
 
 ```
 {
     "error": "Method not supported",
-    "description": "The `/service/` resource does not support PUT."
+    "description": "The `/service` resource does not support POST."
 }
 ```
 
+The _error_ field contains a short error description and the _description_ field
+contains a more detailed version of the error message.
+
+- 400 Bad Request
+
+  - The server cannot or will not process the request due to client error.
+
+- 401 Unauthorized
+
+  - Authentication is required. The response includes a WWW-Authenticate header.
+
+- 403 Forbidden
+
+  - The request was a valid request, but the client does not have the necessary
+    permissions for the resource.
+
+- 404 Not Found
+
+  - The requested resource could not be found.
+
+- 405 Method Not Allowed
+
+  - A request method is not supported for the requested resource.
+
+- 406 Not Acceptable
+
+  - The requested resource is capable of generating only content not acceptable
+    according to the Accept headers sent in the request.
+
+- 409 Conflict
+
+  - Indicates that the request could not be processed because of conflict in the
+request, such as an edit conflict be tween multiple simultaneous updates.
+
+- 411 Length Required
+
+  - The request did not specify the length of its content, which is required by
+    the requested resource.
+
+- 412 Precondition Failed
+
+  - The server does not meet one of the preconditions that the requester put on
+    the request.
+
+- 413 Payload Too Large
+
+  - The request is larger than the server is willing or able to process.
+
+- 414 URI Too Long
+
+  - The URI provided was too long for the server to process.
+
+- 415 Unsupported Media Type
+
+  - The request entity has a media type which the server or resource does not
+    support.
+
+- 422 Unprocessable Entity
+
+  - The request was well-formed but was unable to be followed due to semantic
+    errors.
+
+- 423 Locked
+
+  - The resource that is being accessed is locked.
+
+- 428 Precondition Required
+
+  - The origin server requires the request to be conditional. Intended to
+    prevent "the 'lost update' problem, where a client GETs a resource's state,
+    modifies it, and PUTs it back to the server, when meanwhile a third party
+    has modified the state on the server, leading to a conflict."
+
+- 429 Too Many Requests
+
+  - The user has sent too many requests in a given amount of time. Intended for
+    use with rate-limiting schemes.
+
+- 431 Request Header Fields Too Large
+
+  - The server is unwilling to process the request because either an individual
+    header field, or all the header fields collectively, are too large.
+
+### 5xx Server Error
+
+The server failed to fulfill an apparently valid request.
+
+Response status codes beginning with the digit "5" indicate cases in which the
+server is aware that it has encountered an error or is otherwise incapable of
+performing the request. Except when responding to a HEAD request, the server
+includes an entity containing an explanation of the error situation.
+
+```
+{
+    "error": "Method not supported",
+    "description": "The `/service` resource does not support POST."
+}
+```
+
+The _error_ field contains a short error description and the _description_ field
+contains a more detailed version of the error message.
+
+- 500 Internal Server Error
+
+  - A generic error message, given when an unexpected condition was encountered
+    and no more specific message is suitable.
+
+- 501 Not Implemented
+
+  - The server either does not recognize the request method, or it lacks the
+    ability to fulfill the request. Usually this implies future availability
+    (e.g., a new feature of a web-service API).[citation needed]
+
+- 502 Bad Gateway
+
+  - The server was acting as a gateway or proxy and received an invalid response
+    from the upstream server.
+
+- 503 Service Unavailable
+
+  - The server is currently unavailable (because it is overloaded or down for
+    maintenance). Generally, this is a temporary state.
+
+- 504 Gateway Timeout
+
+  - The server was acting as a gateway or proxy and did not receive a timely
+    response from the upstream server.
+
+- 505 HTTP Version Not Supported
+
+  - The server does not support the HTTP protocol version used in the request.
+
+- 506 Variant Also Negotiates
+
+  - Transparent content negotiation for the request results in a circular
+    reference.
+
+- 507 Insufficient Storage
+
+  - The server is unable to store the representation needed to complete the
+    request.
+
+- 508 Loop Detected
+
+  - The server detected an infinite loop while processing the request (sent in
+    lieu of 208 Already Reported).
+
+- 510 Not Extended
+
+  - Further extensions to the request are required for the server to fulfil it.
+
+### Response Headers Reserved for Future Use
+
+The following response headers are not currently in use. Future versions of the
+API could return them.
+
+- 206 Partial Content
+
+  - The server is delivering only part of the resource (byte serving) due to a
+    range header sent by the client.
+
+- 300 Multiple Choices
+
+  - Indicates multiple options for the resource from which the client may choose
+    (via agent-driven content negotiation).
+
+- 407 Proxy Authentication Required
+
+  - The client must first authenticate itself with the proxy.
+
+- 408 Request Timeout
+
+  - The server timed out waiting for the request. According to HTTP
+    specifications: "The client did not produce a request within the time that
+    the server was prepared to wait. The client MAY repeat the request without
+    modifications at any later time."
+
+- 410 Gone
+
+  - Indicates that the resource requested is no longer available and will not be
+    available again.
+
+- 416 Range Not Satisfiable
+
+  - The client has asked for a portion of the file (byte serving), but the
+    server cannot supply that portion.
+
+- 417 Expectation Failed
+
+  - The server cannot meet the requirements of the Expect request-header field.
+
+- 421 Misdirected Request
+
+  - The request was directed at a server that is not able to produce a response.
+
+- 424 Failed Dependency
+
+  - The request failed due to failure of a previous request.
+
+- 426 Upgrade Required
+
+  - The client should switch to a different protocol such as TLS/1.0, given in
+    the Upgrade header field.
+
 ## Resources
 
-- [/v1/maxscale](Resources-MaxScale.md)
-- [/v1/services](Resources-Service.md)
-- [/v1/servers](Resources-Server.md)
-- [/v1/filters](Resources-Filter.md)
-- [/v1/monitors](Resources-Monitor.md)
-- [/v1/sessions](Resources-Session.md)
-- [/v1/users](Resources-User.md)
+The MaxScale REST API provides the following resources.
 
------
-
-TODO: Move these to a separate document
-
-# Resources that support GET
-
-## `/filter`
-
-Returns information about all filters. Returns an array of JSON objects similar
-to the `/filter/:id` resource.
-
-## `/filter/:id`
-
-All filters will return these fields in the response. In addition to these
-fields, each filter can return extra fields specific to that filter module.
-
-|Field              |Type        |Value                                         |
-|-------------------|------------|----------------------------------------------|
-|name               |string      |Filter name                                   |
-|module             |string      |Filter module                                 |
-
-## `/task`
-
-Returns information about all currently running housekeeping tasks. Comparable
-to the output of maxadmin show tasks.
-
-## `/thread`
-
-Returns information about threads. Comparable to the combined output of maxadmin
-show [threads|epoll|eventq|eventstats].
-
-## `/module`
-
-Returns information about currently loaded modules. Comparable to the output of
-maxadmin show modules.
-
-# Resources that support PUT
-
-All PUT requests that fail due to errors in the provided data receive a response
-with the HTTP response code 400. If the failure is due to an internal error, the
-HTTP response code 500 is returned.
-
-## `/filter/:id`
-
-Modifies the filter whose name matches the :id component of the URL. The body of
-the PUT statement must represent the new filter configuration in JSON and should
-have all the required fields. If filter specific extra fields are missing, they
-are removed from the configuration. Depending on the filter module, changes to
-the configuration can take effect immediately or only for new filter sessions.
-
-### Required fields
-
-|Field              |Type        |Value                                         |
-|-------------------|------------|----------------------------------------------|
-|name               |string      |Filter name                                   |
-|module             |string      |Filter module                                 |
+- [/maxscale](Resources-MaxScale.md)
+- [/services](Resources-Service.md)
+- [/servers](Resources-Server.md)
+- [/filters](Resources-Filter.md)
+- [/monitors](Resources-Monitor.md)
+- [/sessions](Resources-Session.md)
+- [/users](Resources-User.md)

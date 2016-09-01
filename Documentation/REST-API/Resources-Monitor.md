@@ -11,7 +11,7 @@ Get a single monitor. The _:name_ in the URI must be a valid monitor name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /v1/monitors/:name
+GET /monitors/:name
 ```
 
 #### Response
@@ -40,7 +40,7 @@ Status: 200 OK
 Get all monitors.
 
 ```
-GET /v1/monitors
+GET /monitors
 ```
 
 #### Response
@@ -87,7 +87,7 @@ and the request body must be a valid JSON Patch document which is applied to the
 resource.
 
 ```
-PATCH /v1/monitor/:name
+PATCH /monitor/:name
 ```
 
 ### Modifiable Fields

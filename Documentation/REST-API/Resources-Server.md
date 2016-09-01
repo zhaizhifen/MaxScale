@@ -10,7 +10,7 @@ Get a single server. The _:name_ in the URI must be a valid server name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /v1/servers/:name
+GET /servers/:name
 ```
 
 #### Response
@@ -40,7 +40,7 @@ Status: 200 OK
 ### Get all servers
 
 ```
-GET /v1/servers
+GET /servers
 ```
 
 #### Response
@@ -86,7 +86,7 @@ and the request body must be a valid JSON Patch document which is applied to the
 resource.
 
 ```
-PATCH /v1/servers/:name
+PATCH /servers/:name
 ```
 
 ### Modifiable Fields
@@ -136,7 +136,7 @@ Close all connections to a particular server. This will forcefully close all
 backend connections.
 
 ```
-DELETE /v1/servers/:name/connections
+DELETE /servers/:name/connections
 ```
 
 #### Response

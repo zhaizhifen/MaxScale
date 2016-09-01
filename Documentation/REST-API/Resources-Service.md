@@ -11,13 +11,13 @@ Get a single service. The _:name_ in the URI must be a valid service name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /v1/services/:name
+GET /services/:name
 ```
 
 Get the owning service of a session. _:id_ must be a valid session ID.
 
 ```
-GET /v1/session/:id/services
+GET /session/:id/services
 ```
 
 #### Response
@@ -51,7 +51,7 @@ Status: 200 OK
 Get all services.
 
 ```
-GET /v1/services
+GET /services
 ```
 
 #### Response
@@ -104,7 +104,7 @@ and the request body must be a valid JSON Patch document which is applied to the
 resource.
 
 ```
-PATCH /v1/services/:name
+PATCH /services/:name
 ```
 
 ### Modifiable Fields
@@ -158,7 +158,7 @@ Close all sessions for a particular service. This will forcefully close all
 client connections and any backend connections they have made.
 
 ```
-DELETE /v1/services/:name/sessions
+DELETE /services/:name/sessions
 ```
 
 #### Response

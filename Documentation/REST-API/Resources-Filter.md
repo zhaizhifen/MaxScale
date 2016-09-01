@@ -11,7 +11,7 @@ Get a single filter. The _:name_ in the URI must be a valid filter name in
 lowercase with all whitespace replaced with underscores.
 
 ```
-GET /v1/filters/:name
+GET /filters/:name
 ```
 
 #### Response
@@ -38,7 +38,7 @@ Status: 200 OK
 Get all filters.
 
 ```
-GET /v1/filters
+GET /filters
 ```
 
 #### Response
@@ -79,7 +79,7 @@ and the request body must be a valid JSON Patch document which is applied to the
 resource.
 
 ```
-PATCH /v1/filter/:name
+PATCH /filter/:name
 ```
 
 ### Modifiable Fields
