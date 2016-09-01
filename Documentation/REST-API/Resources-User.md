@@ -35,7 +35,7 @@ Status: 200 OK
 Create a new administrative user.
 
 ```
-POST /users
+PUT /users
 ```
 
 ### Modifiable Fields
@@ -44,7 +44,7 @@ All of the following fields need to be defined in the request body.
 
 |Field    |Type  |Description              |
 |---------|------|-------------------------|
-|name     |string|User's name              |
+|name     |string|Username, consisting of alphanumeric characters|
 |password |string|Password for the new user|
 
 ```
@@ -62,7 +62,8 @@ Status: 204 No Content
 
 ### Delete a user
 
-Delete a user. The _:name_ part of the URI must be a valid user name.
+Delete a user. The _:name_ part of the URI must be a valid user name. The user
+names are case-insensitive.
 
 ```
 DELETE /users/:name

@@ -19,16 +19,15 @@ GET /sessions/:id
 ```
 Status: 200 OK
 
-[
-    {
-        "state": "Session ready for routing",
-        "user": "jdoe",
-        "address": "192.168.0.200",
-        "service": "My Service",
-        "connected": "Wed Aug 31 03:03:12 2016",
-        "idle": 260
-    }
-]
+{
+    "id": 1,
+    "state": "Session ready for routing",
+    "user": "jdoe",
+    "address": "192.168.0.200",
+    "service": "/services/my-service",
+    "connected": "Wed Aug 31 03:03:12 2016",
+    "idle": 260
+}
 ```
 
 ### Get all sessions
@@ -46,18 +45,20 @@ Status: 200 OK
 
 [
     {
+        "id": 1,
         "state": "Session ready for routing",
         "user": "jdoe",
         "address": "192.168.0.200",
-        "service": "My Service",
+        "service": "/services/My-Service",
         "connected": "Wed Aug 31 03:03:12 2016",
         "idle": 260
     },
     {
+        "id": 2,
         "state": "Session ready for routing",
         "user": "dba",
         "address": "192.168.0.201",
-        "service": "My Service",
+        "service": "/services/My-Service",
         "connected": "Wed Aug 31 03:10:00 2016",
         "idle": 1
     }
@@ -81,7 +82,8 @@ Status: 200 OK
     {
         "state": "DCB in the polling loop",
         "role": "Backend Request Handler",
-        "server": "db-serv-01"
+        "server": "/servers/db-serv-01",
+        "service": "/services/my-service",
         "statistics": {
             "reads":             2197
             "writes":            1562
@@ -93,7 +95,8 @@ Status: 200 OK
     {
         "state": "DCB in the polling loop",
         "role": "Backend Request Handler",
-        "server": "db-serv-02"
+        "server": "/servers/db-serv-02",
+        "service": "/services/my-service",
         "statistics": {
             "reads":             0
             "writes":            0

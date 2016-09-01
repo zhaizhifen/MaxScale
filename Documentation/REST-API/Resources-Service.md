@@ -7,17 +7,11 @@ collection of network listeners, filters, a router and a set of backend servers.
 
 ### Get a service
 
-Get a single service. The _:name_ in the URI must be a valid service name in
-lowercase with all whitespace replaced with underscores.
+Get a single service. The _:name_ in the URI must be a valid service name with
+all whitespace replaced with hyphens. The service names are case-insensitive.
 
 ```
 GET /services/:name
-```
-
-Get the owning service of a session. _:id_ must be a valid session ID.
-
-```
-GET /session/:id/services
 ```
 
 #### Response
@@ -36,12 +30,12 @@ Status: 200 OK
     "current_connections": 2,
     "started": "2016-08-29T12:52:31+03:00",
     "filters": [
-        "Query Logging Filter"
+        "/filters/Query-Logging-Filter"
     ],
     "servers": [
-        "db-serv-1",
-        "db-serv-2",
-        "db-serv-3"
+        "/servers/db-serv-1",
+        "/servers/db-serv-2",
+        "/servers/db-serv-3"
     ]
 }
 ```
@@ -71,12 +65,12 @@ Status: 200 OK
         "current_connections": 2,
         "started": "2016-08-29T12:52:31+03:00",
         "filters": [
-            "Query Logging Filter"
+            "/filters/Query-Logging-Filter"
         ],
         "servers": [
-            "db-serv-1",
-            "db-serv-2",
-            "db-serv-3"
+            "/servers/db-serv-1",
+            "/servers/db-serv-2",
+            "/servers/db-serv-3"
         ]
     },
     {
@@ -90,8 +84,8 @@ Status: 200 OK
         "current_connections": 2,
         "started": "2016-08-29T12:52:31+03:00",
         "servers": [
-            "db-serv-1",
-            "db-serv-2"
+            "/servers/db-serv-1",
+            "/servers/db-serv-2"
         ]
     }
 ]
@@ -111,14 +105,14 @@ PATCH /services/:name
 
 |Field         |Type        |Description                                        |
 |--------------|------------|---------------------------------------------------|
-|servers       |string array|Servers used by this service                       |
+|servers       |string array|Servers used by this service, must be relative links to existing server resources|
 |state         |string      |State of the service, either `started` or `stopped`|
 |router_options|object      |Router specific options                            |
 |filters       |string array|Service filters, configured in the same order they are declared in the array (`filters[0]` => first filter, `filters[1]` => second filter)|
 
 ```
 [
-    { "op": "replace", "path": "/servers", "value": ["db-serv-2","db-serv-3"] },
+    { "op": "replace", "path": "/servers", "value": ["/servers/db-serv-2","/servers/db-serv-3"] },
     { "op": "replace", "path": "/state", "value": "started" },
     { "op": "add", "path": "/router_options/master_failover_mode", "value": "fail_on_write" },
     { "op": "remove", "path": "/filters" }
@@ -146,10 +140,31 @@ Status: 200 OK
         "current_connections": 2,
         "started": "2016-08-29T12:52:31+03:00",
         "servers": [
-            "db-serv-2",
-            "db-serv-3"
+            "/servers/db-serv-2",
+            "/servers/db-serv-3"
         ]
     }
+```
+
+### Get all sessions for a service
+
+Get all sessions for a particular service.
+
+```
+GET /services/:name/sessions
+```
+
+#### Response
+
+Relative links to all sessions for this service.
+
+```
+Status: 200 OK
+
+[
+    "/sessions/1",
+    "/sessions/2"
+]
 ```
 
 ### Close all sessions for a service

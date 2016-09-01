@@ -31,16 +31,16 @@ Status: 200 OK
     "user": "maxscale",
     "maxlog": true,
     "syslog": false,
-    "log_levels": [
-        "error",
-        "warning",
-        "notice",
-        "info",
-        "debug"
-    ],
-    "log_augmentation": [
-        "function"
-    ],
+    "log_levels": {
+        "error": true,
+        "warning": true,
+        "notice": true,
+        "info": false,
+        "debug": false
+    },
+    "log_augmentation": {
+        "function": true
+    },
     "log_throttling": {
         "limit": 8,
         "window": 2000,

@@ -6,8 +6,8 @@ A server resource represents a backend database server.
 
 ### Get a server
 
-Get a single server. The _:name_ in the URI must be a valid server name in
-lowercase with all whitespace replaced with underscores.
+Get a single server. The _:name_ in the URI must be a valid server name with all
+whitespace replaced with hyphens. The server names are case-insensitive.
 
 ```
 GET /servers/:name
@@ -34,7 +34,7 @@ Status: 200 OK
 }
 ```
 
-**Note**: The _parameters_ field contains all non-standard parameters for
+**Note**: The _parameters_ field contains all custom parameters for
   servers, including the server weighting parameters.
 
 ### Get all servers
@@ -79,11 +79,11 @@ Status: 200 OK
 ]
 ```
 
-### Update a service
+### Update a server
 
-Partially update a server. The _:name_ in the URI must map to a server name
-and the request body must be a valid JSON Patch document which is applied to the
-resource.
+Partially update a server. The _:name_ in the URI must map to a server name with
+all whitespace replaced with hyphens and the request body must be a valid JSON
+Patch document which is applied to the resource.
 
 ```
 PATCH /servers/:name
@@ -96,7 +96,7 @@ PATCH /servers/:name
 |address    |string      |Server address                                                               |
 |port       |number      |Server port                                                                  |
 |parameters |object      |Server extra parameters                                                      |
-|state      |string array|Server state, list of `master`, `slave`, `synced`, `running` or `maintenance`|
+|state      |string array|Server state, array of `master`, `slave`, `synced`, `running` or `maintenance`. An empty array is interpreted as a server that is down.|
 
 ```
 {
@@ -128,6 +128,49 @@ Status: 200 OK
         "app_weight": 2
     }
 }
+```
+
+### Get all connections to a server
+
+Get all connections that are connected to a server.
+
+```
+GET /servers/:name/connections
+```
+
+#### Response
+
+```
+Status: 200 OK
+
+[
+    {
+        "state": "DCB in the polling loop",
+        "role": "Backend Request Handler",
+        "server": "/servers/db-serv-01",
+        "service": "/services/my-service",
+        "statistics": {
+            "reads":             2197
+            "writes":            1562
+            "buffered_writes":   0
+            "high_water_events": 0
+            "low_water_events":  0
+        }
+    },
+    {
+        "state": "DCB in the polling loop",
+        "role": "Backend Request Handler",
+        "server": "/servers/db-serv-01",
+        "service": "/services/my-second-service"
+        "statistics": {
+            "reads":             0
+            "writes":            0
+            "buffered_writes":   0
+            "high_water_events": 0
+            "low_water_events":  0
+        }
+    }
+]
 ```
 
 ### Close all connections to a server

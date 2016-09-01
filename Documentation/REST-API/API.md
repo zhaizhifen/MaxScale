@@ -1,7 +1,6 @@
 # REST API design document
 
-This document describes the version 1 of the MaxScale REST API. The version 1
-API is accessed though the `/v1` entry point.
+This document describes the version 1 of the MaxScale REST API.
 
 ## Table of Contents
 
@@ -37,7 +36,8 @@ All PUT and POST requests must use the `Content-Type: application/json` media
 type and the request body must be a valid JSON representation of a resource. All
 PATCH requests must use the `Content-Type: application/json-patch` media type
 and the request body must be a valid JSON Patch document which is applied to the
-resource. Curently, only _add_, _remove_ and _replace_ operations are supported.
+resource. Curently, only _add_, _remove_, _replace_ and _test_ operations are
+supported.
 
 Read the [JSON Patch](https://tools.ietf.org/html/draft-ietf-appsawg-json-patch-08)
 draft for more details on how to use it with PATCH.
@@ -94,7 +94,7 @@ the intended method in the `X-HTTP-Method-Override` header, a client can perform
 a POST, PATCH or DELETE request with the PUT method
 (e.g. `X-HTTP-Method-Override: PATCH`).
 
-TODO: Add the rest
+_TODO: Add API version header?_
 
 ### Response Headers
 
@@ -239,7 +239,7 @@ contains a more detailed version of the error message.
 - 409 Conflict
 
   - Indicates that the request could not be processed because of conflict in the
-request, such as an edit conflict be tween multiple simultaneous updates.
+    request, such as an edit conflict be tween multiple simultaneous updates.
 
 - 411 Length Required
 
@@ -275,15 +275,8 @@ request, such as an edit conflict be tween multiple simultaneous updates.
 
 - 428 Precondition Required
 
-  - The origin server requires the request to be conditional. Intended to
-    prevent "the 'lost update' problem, where a client GETs a resource's state,
-    modifies it, and PUTs it back to the server, when meanwhile a third party
-    has modified the state on the server, leading to a conflict."
-
-- 429 Too Many Requests
-
-  - The user has sent too many requests in a given amount of time. Intended for
-    use with rate-limiting schemes.
+  - The origin server requires the request to be conditional. This error code is
+    returned when none of the `Modified-Since` or `Match` type headers are used.
 
 - 431 Request Header Fields Too Large
 
@@ -301,8 +294,8 @@ includes an entity containing an explanation of the error situation.
 
 ```
 {
-    "error": "Method not supported",
-    "description": "The `/service` resource does not support POST."
+    "error": "Log rotation failed",
+    "description": "Failed to rotate log files: 13, Permission denied"
 }
 ```
 
@@ -317,8 +310,7 @@ contains a more detailed version of the error message.
 - 501 Not Implemented
 
   - The server either does not recognize the request method, or it lacks the
-    ability to fulfill the request. Usually this implies future availability
-    (e.g., a new feature of a web-service API).[citation needed]
+    ability to fulfill the request.
 
 - 502 Bad Gateway
 
@@ -410,6 +402,11 @@ API could return them.
 
   - The client should switch to a different protocol such as TLS/1.0, given in
     the Upgrade header field.
+
+- 429 Too Many Requests
+
+  - The user has sent too many requests in a given amount of time. Intended for
+    use with rate-limiting schemes.
 
 ## Resources
 

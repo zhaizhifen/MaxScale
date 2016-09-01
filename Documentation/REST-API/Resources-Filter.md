@@ -7,8 +7,8 @@ services can use the same filter and a single service can use multiple filters.
 
 ### Get a filter
 
-Get a single filter. The _:name_ in the URI must be a valid filter name in
-lowercase with all whitespace replaced with underscores.
+Get a single filter. The _:name_ in the URI must be a valid filter name with all
+whitespace replaced with hyphens. The filter names are case-insensitive.
 
 ```
 GET /filters/:name
@@ -27,8 +27,8 @@ Status: 200 OK
         "match": "select.*from.*t1"
     }
     "services": [
-        "My Service",
-        "My Second Service"
+        "/services/my-service",
+        "/services/my-second-service"
     ]
 }
 ```
@@ -51,22 +51,32 @@ Status: 200 OK
         "name": "Query Logging Filter",
         "module": "qlafilter",
         "parameters": {
-            "filebase": "/var/log/maxscale/qla/log.",
-            "match": "select.*from.*t1"
+            "filebase": {
+                "value": "/var/log/maxscale/qla/log.",
+                "configurable": false
+            },
+            "match": {
+                "value": "select.*from.*t1",
+                "configurable": true
+            }
         }
         "services": [
-            "My Service",
-            "My Second Service"
+            "/services/my-service",
+            "/services/my-second-service
         ]
     },
     {
         "name": "DBFW Filter",
         "module": "dbfwfilter",
         "parameters": {
-            "rules": "/etc/maxscale-rules"
+            {
+                "name": "rules",
+                "value": "/etc/maxscale-rules",
+                "configurable": false
+            }
         }
         "services": [
-            "My Second Service"
+            "/services/my-second-service
         ]
     }
 ]
@@ -90,8 +100,8 @@ PATCH /filter/:name
 
 ```
 [
-    { "op": "replace", "path": "/parameters/rules", "value": "/etc/new-rules" },
-    { "op": "add", "path": "/parameters/action", "value": "allow" }
+    { "op": "replace", "path": "/parameters/rules/value", "value": "/etc/new-rules" },
+    { "op": "add", "path": "/parameters/action/value", "value": "allow" }
 ]
 ```
 
@@ -106,11 +116,17 @@ Status: 200 OK
     "name": "DBFW Filter",
     "module": "dbfwfilter",
     "parameters": {
-        "rules": "/etc/new-rules",
-        "action": "allow"
+        "rules": {
+            "value": "/etc/new-rules",
+            "configurable": false
+        },
+        "action": {
+            "value": "allow",
+            "configurable": true
+        }
     }
     "services": [
-        "My Second Service"
+        "/services/my-second-service"
     ]
 }
 ```

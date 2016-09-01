@@ -7,8 +7,8 @@ more servers.
 
 ### Get a monitor
 
-Get a single monitor. The _:name_ in the URI must be a valid monitor name in
-lowercase with all whitespace replaced with underscores.
+Get a single monitor. The _:name_ in the URI must be a valid monitor name with
+all whitespace replaced with hyphens. The monitor names are case-insensitive.
 
 ```
 GET /monitors/:name
@@ -28,9 +28,9 @@ Status: 200 OK
     "read_timeout": 2,
     "write_timeout": 3,
     "servers": [
-        "db-serv-1",
-        "db-serv-2",
-        "db-serv-3"
+        "/servers/db-serv-1",
+        "/servers/db-serv-2",
+        "/servers/db-serv-3"
     ]
 }
 ```
@@ -58,9 +58,9 @@ Status: 200 OK
         "read_timeout": 2,
         "write_timeout": 3,
         "servers": [
-            "db-serv-1",
-            "db-serv-2",
-            "db-serv-3"
+            "/servers/db-serv-1",
+            "/servers/db-serv-2",
+            "/servers/db-serv-3"
         ]
     },
     {
@@ -72,9 +72,9 @@ Status: 200 OK
         "read_timeout": 5,
         "write_timeout": 5,
         "servers": [
-            "db-galera-1",
-            "db-galera-2",
-            "db-galera-3"
+            "/servers/db-galera-1",
+            "/servers/db-galera-2",
+            "/servers/db-galera-3"
         ]
     }
 ]
@@ -125,8 +125,8 @@ Status: 200 OK
     "name": "MySQL Monitor",
     "module": "mysqlmon",
     "servers": [
-        "db-serv-2",
-        "db-serv-3"
+        "/servers/db-serv-2",
+        "/servers/db-serv-3"
     ],
     "state": "started",
     "monitor_interval": 2000,
