@@ -93,6 +93,10 @@ Status: 200 OK
 
 ### Update a service
 
+**Note**: The update mechanisms described here are provisional and most likely
+  will change in the future. This description is only for design purposes and
+  does not yet work.
+
 Partially update a service. The _:name_ in the URI must map to a service name
 and the request body must be a valid JSON Patch document which is applied to the
 resource.

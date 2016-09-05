@@ -81,6 +81,10 @@ Status: 200 OK
 
 ### Update a server
 
+**Note**: The update mechanisms described here are provisional and most likely
+  will change in the future. This description is only for design purposes and
+  does not yet work.
+
 Partially update a server. The _:name_ in the URI must map to a server name with
 all whitespace replaced with hyphens and the request body must be a valid JSON
 Patch document which is applied to the resource.
