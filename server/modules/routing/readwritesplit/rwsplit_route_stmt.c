@@ -455,7 +455,7 @@ void *rwsplit_hstrdup(const void *fval)
     return MXS_STRDUP(str);
 }
 
-void *rwsplit_hfree(void *fval)
+void rwsplit_hfree(void *fval)
 {
     MXS_FREE(fval);
 }

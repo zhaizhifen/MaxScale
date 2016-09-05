@@ -53,13 +53,6 @@
  * @endverbatim
  */
 
-static bool send_readonly_error(DCB *dcb);
-static bool route_session_write(ROUTER_CLIENT_SES *router_cli_ses,
-                                GWBUF *querybuf, ROUTER_INSTANCE *inst,
-                                unsigned char packet_type,
-                                qc_query_type_t qtype);
-static sescmd_cursor_t *backend_ref_get_sescmd_cursor(backend_ref_t *bref);
-
 /*
  * The following functions are called from elsewhere in the router and
  * are defined in rwsplit_internal.h.  They are not intended to be called
@@ -511,7 +504,7 @@ static DCB *rses_get_client_dcb(ROUTER_CLIENT_SES *rses)
  * be removed.
  */
 
-static sescmd_cursor_t *backend_ref_get_sescmd_cursor(backend_ref_t *bref)
+sescmd_cursor_t *backend_ref_get_sescmd_cursor(backend_ref_t *bref)
 {
     sescmd_cursor_t *scur;
     CHK_BACKEND_REF(bref);
@@ -527,7 +520,7 @@ static sescmd_cursor_t *backend_ref_get_sescmd_cursor(backend_ref_t *bref)
  * @param dcb Client DCB
  * @return True if sending the message was successful, false if an error occurred
  */
-static bool send_readonly_error(DCB *dcb)
+bool send_readonly_error(DCB *dcb)
 {
     bool succp = false;
     const char* errmsg = "The MariaDB server is running with the --read-only"

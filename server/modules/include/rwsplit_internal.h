@@ -38,6 +38,13 @@ bool execute_sescmd_in_backend(backend_ref_t *backend_ref);
 bool handle_target_is_all(route_target_t route_target,
         ROUTER_INSTANCE *inst, ROUTER_CLIENT_SES *rses,
         GWBUF *querybuf, int packet_type, qc_query_type_t qtype);
+int determine_packet_type(GWBUF *querybuf, bool *non_empty_packet);
+void log_transaction_status(ROUTER_CLIENT_SES *rses, GWBUF *querybuf, qc_query_type_t qtype);
+void session_lock_failure_handling(GWBUF *querybuf, int packet_type, qc_query_type_t qtype);
+bool is_packet_a_one_way_message(int packet_type);
+sescmd_cursor_t *backend_ref_get_sescmd_cursor(backend_ref_t *bref);
+bool is_packet_a_query(int packet_type);
+bool send_readonly_error(DCB *dcb);
 
 /*
  * The following are implemented in readwritesplit.c
@@ -61,7 +68,7 @@ bool route_single_stmt(ROUTER_INSTANCE *inst, ROUTER_CLIENT_SES *rses,
 int rwsplit_hashkeyfun(const void *key);
 int rwsplit_hashcmpfun(const void *v1, const void *v2);
 void *rwsplit_hstrdup(const void *fval);
-void *rwsplit_hfree(void *fval);
+void rwsplit_hfree(void *fval);
 bool rwsplit_get_dcb(DCB **p_dcb, ROUTER_CLIENT_SES *rses, backend_type_t btype,
                     char *name, int max_rlag);
 route_target_t get_route_target(ROUTER_CLIENT_SES *rses,
