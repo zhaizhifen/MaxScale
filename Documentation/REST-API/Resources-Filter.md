@@ -23,9 +23,15 @@ Status: 200 OK
     "name": "Query Logging Filter",
     "module": "qlafilter",
     "parameters": {
-        "filebase": "/var/log/maxscale/qla/log.",
-        "match": "select.*from.*t1"
-    }
+        "filebase": {
+            "value": "/var/log/maxscale/qla/log.",
+            "configurable": false
+        },
+        "match": {
+            "value": "select.*from.*t1",
+            "configurable": true
+        }
+    },
     "services": [
         "/services/my-service",
         "/services/my-second-service"
@@ -59,7 +65,7 @@ Status: 200 OK
                 "value": "select.*from.*t1",
                 "configurable": true
             }
-        }
+        },
         "services": [
             "/services/my-service",
             "/services/my-second-service
@@ -74,7 +80,7 @@ Status: 200 OK
                 "value": "/etc/maxscale-rules",
                 "configurable": false
             }
-        }
+        },
         "services": [
             "/services/my-second-service
         ]
