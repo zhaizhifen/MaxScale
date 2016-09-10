@@ -110,20 +110,24 @@ PATCH /services/:name
 |Field         |Type        |Description                                        |
 |--------------|------------|---------------------------------------------------|
 |servers       |string array|Servers used by this service, must be relative links to existing server resources|
-|state         |string      |State of the service, either `started` or `stopped`|
-|router_options|object      |Router specific options                            |
+|router_options|object      |Router specific options|
 |filters       |string array|Service filters, configured in the same order they are declared in the array (`filters[0]` => first filter, `filters[1]` => second filter)|
+|user          |string      |The username for the service user|
+|password      |string      |The password for the service user|
+|root_user     |boolean     |Allow root user to connect via this service|
+|version_string|string      |Custom version string given to connecting clients|
+|weightby      |string      |Name of a server weigting parameter which is used for connection weighting|
+|connection_timeout|number  |Client idle timeout in seconds|
+|max_connection|number      |Maximum number of allowed connections|
+|strip_db_esc|boolean       |Strip escape characters from default database name|
 
 ```
 [
     { "op": "replace", "path": "/servers", "value": ["/servers/db-serv-2","/servers/db-serv-3"] },
-    { "op": "replace", "path": "/state", "value": "started" },
     { "op": "add", "path": "/router_options/master_failover_mode", "value": "fail_on_write" },
     { "op": "remove", "path": "/filters" }
 ]
 ```
-
-_TODO: Add common service parameters_
 
 #### Response
 
@@ -148,6 +152,34 @@ Status: 200 OK
             "/servers/db-serv-3"
         ]
     }
+```
+
+### Stop a service
+
+Stops a started service.
+
+```
+PUT /service/:name/stop
+```
+
+#### Response
+
+```
+Status: 204 No Content
+```
+
+### Start a service
+
+Starts a stopped service.
+
+```
+PUT /service/:name/start
+```
+
+#### Response
+
+```
+Status: 204 No Content
 ```
 
 ### Get all sessions for a service

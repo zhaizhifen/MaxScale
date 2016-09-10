@@ -80,6 +80,34 @@ Status: 200 OK
 ]
 ```
 
+### Stop a monitor
+
+Stops a started monitor.
+
+```
+PUT /monitor/:name/stop
+```
+
+#### Response
+
+```
+Status: 204 No Content
+```
+
+### Start a monitor
+
+Starts a stopped monitor.
+
+```
+PUT /monitor/:name/start
+```
+
+#### Response
+
+```
+Status: 204 No Content
+```
+
 ### Update a monitor
 
 **Note**: The update mechanisms described here are provisional and most likely
@@ -101,7 +129,6 @@ The following values can be modified with the PATCH method.
 |Field            |Type        |Description                                        |
 |-----------------|------------|---------------------------------------------------|
 |servers          |string array|Servers monitored by this monitor                  |
-|state            |string      |State of the monitor, either `started` or `stopped`|
 |monitor_interval |number      |Monitoring interval in milliseconds                |
 |connect_timeout  |number      |Connection timeout in seconds                      |
 |read_timeout     |number      |Read timeout in seconds                            |
@@ -110,7 +137,6 @@ The following values can be modified with the PATCH method.
 ```
 [
     { "op": "remove", "path": "/servers/0" },
-    { "op": "replace", "path": "/state", "value": "started" },
     { "op": "replace", "path": "/monitor_interval", "value": 2000 },
     { "op": "replace", "path": "/connect_timeout", "value": 2 },
     { "op": "replace", "path": "/read_timeout", "value": 2 },
