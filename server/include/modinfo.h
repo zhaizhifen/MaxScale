@@ -147,4 +147,6 @@ typedef struct
                                 .moduleinit = init, .object = mod};     \
     MODULE_INFO* mxs_get_module_info(void){return &mxs_module_info;}
 
+#define MXS_MODULE_ENTRY_POINT "mxs_get_module_info"
+
 #endif

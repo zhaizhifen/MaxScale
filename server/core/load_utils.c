@@ -145,7 +145,7 @@ load_module(const char *name, const char *type)
             return NULL;
         }
 
-        MODULE_INFO *(*get_mod_info)(void) = dlsym(dlhandle, "mxs_get_module_info");
+        MODULE_INFO *(*get_mod_info)(void) = dlsym(dlhandle, MXS_MODULE_ENTRY_POINT);
 
         if (get_mod_info)
         {
