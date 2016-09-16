@@ -56,8 +56,8 @@ and each module type has its own.
 A router module is declared by calling the MXS_DECLARE_MODULE macro with the
 value ROUTER. The _router.h_ header contains router module definitions and the
 router module object. All router modules must provide an implementation of the
-ROUTER_OBJECT and must pass it as the _object_ parameter of the MODULE_INFO
-structure. All entry points in the interface must be defined. This structure
+ROUTER_OBJECT and must pass it as the _object_ parameter for the MXS_DECLARE_MODULE
+macro. All entry points in the interface must be defined. This structure
 contains the following entry points, in order:
 
 - `ROUTER* (*createInstance)(SERVICE *service, char **options)`
@@ -135,8 +135,8 @@ contains the following entry points, in order:
 A filter module is declared by calling the MXS_DECLARE_MODULE macro with the
 value FILTER. The _filter.h_ header contains filter module definitions and the
 filter module object. All filter modules must provide an implementation of the
-FILTER_OBJECT and must pass it as the _object_ parameter of the MODULE_INFO
-structure. All entry points in the interface must be defined. This structure
+FILTER_OBJECT and must pass it as the _object_ parameter for the MXS_DECLARE_MODULE
+macro. All entry points in the interface must be defined. This structure
 contains the following entry points, in order:
 
 - `FILTER *(*createInstance)(char **options, FILTER_PARAMETER **parameters)`
@@ -233,6 +233,42 @@ contains the following entry points, in order:
     is not NULL, an individual filter session is being inspected.
 
 ## Monitor Requirements
+
+A monitor module is declared by calling the MXS_DECLARE_MODULE macro with the
+value MONITOR. The relevant structures are contained in the _monitor.h_
+header. All monitor modules must provide an implementation of the MONITOR_OBJECT
+and must pass it as the _object_ parameter for the MXS_DECLARE_MODULE macro. All
+entry points in the interface must be defined. The MONITOR_OBJECT structure
+contains the following entry points, in order:
+
+- `void *(*startMonitor)(MONITOR *monitor, const CONFIG_PARAMETER *params)`
+
+  - Start a monitor. The _monitor_ parameter is the MONITOR structure which
+    contains common monitor options. The _params_ parameter is a linked list of
+    configuration parameters that are unique to this monitor. The _startMonitor_
+    entry point will only be called once when the monitor is started. If the
+    monitor module needs to poll the monitored servers, it should create a
+    separate monitoring thread with the `thread_start` thread defined in the
+    `thread.h` header. The servers which the monitor should monitor are stored
+    in the `databases` member of the `MONITOR` structure. Read the comments on
+    `struct monitor` in `monitor.h` for more details.
+
+    The returned value is stored in the `handle` parameter of the `MONITOR`
+    structure.
+
+- `void (*stopMonitor)(MONITOR *monitor)`
+
+  - Stop a monitor. The _handle_ member of the _monitor_ parameter contains the
+    value returned by `startMonitor`. This entry point should stop the monitor
+    but it does not have to free any acquired resources. If `startMonitor` is
+    called after `stopMonitor` the value of `handle` is guaranteed to stay the
+    same.
+
+- `void (*diagnostics)(DCB *dcb, const MONITOR *monitor)`
+
+  - Diagnostics function. The _dcb_ is a client DCB where the diagnostic
+    information should be written using the function `dcb_printf`. The _monitor_
+    is the same MONITOR structure given as the parameter to other functions.
 
 ## Protocol Requirements
 
