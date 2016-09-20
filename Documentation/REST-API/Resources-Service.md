@@ -91,6 +91,41 @@ Status: 200 OK
 ]
 ```
 
+### Get service listeners
+
+Get the listeners of a service. The _:name_ in the URI must be a valid service
+name with all whitespace replaced with hyphens. The service names are
+case-insensitive.
+
+```
+GET /services/:name/listeners
+```
+
+#### Response
+
+```
+Status: 200 OK
+
+[
+    {
+        "name": "My Listener",
+        "protocol": "MySQLClient",
+        "address": "0.0.0.0",
+        "port": 4006
+    },
+    {
+        "name": "My SSL Listener",
+        "protocol": "MySQLClient",
+        "address": "127.0.0.1",
+        "port": 4006,
+        "ssl": "required",
+        "ssl_cert": "/home/markusjm/newcerts/server-cert.pem",
+        "ssl_key": "/home/markusjm/newcerts/server-key.pem",
+        "ssl_ca_cert": "/home/markusjm/newcerts/ca.pem"
+    }
+]
+```
+
 ### Update a service
 
 **Note**: The update mechanisms described here are provisional and most likely
