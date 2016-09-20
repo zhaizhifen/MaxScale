@@ -40,7 +40,7 @@
 /*
  * The following are to do with checking whether the statement refers to
  * temporary tables, or is a multi-statement request. Maybe they belong
- * somewhere else, outside this router.
+ * somewhere else, outside this router. Perhaps in the query classifier?
  */
 
 /**
@@ -75,6 +75,7 @@ void check_drop_tmp_table(ROUTER_CLIENT_SES *router_cli_ses, GWBUF *querybuf,
         {
             for (i = 0; i < tsize; i++)
             {
+                /* Not clear why the next six lines are outside the if block */
                 klen = strlen(dbname) + strlen(tbl[i]) + 2;
                 hkey = MXS_CALLOC(klen, sizeof(char));
                 MXS_ABORT_IF_NULL(hkey);
