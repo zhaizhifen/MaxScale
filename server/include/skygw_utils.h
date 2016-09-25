@@ -13,13 +13,6 @@
  * Public License.
  */
 
-/*
- * We need a common.h file that is included by every component.
- */
-#if !defined(STRERROR_BUFLEN)
-#define STRERROR_BUFLEN 512
-#endif
-
 #ifndef MIN
 #define MIN(a,b) (a<b ? a : b)
 #endif

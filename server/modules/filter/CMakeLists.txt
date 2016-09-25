@@ -1,4 +1,7 @@
+if(BUILD_CACHE)
 add_subdirectory(cache)
+endif()
+
 add_subdirectory(ccrfilter)
 add_subdirectory(dbfwfilter)
 add_subdirectory(gatekeeper)

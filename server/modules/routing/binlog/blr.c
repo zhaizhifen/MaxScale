@@ -70,7 +70,7 @@
 #include <spinlock.h>
 #include <housekeeper.h>
 #include <time.h>
-
+#include <thread.h>
 #include <skygw_types.h>
 #include <skygw_utils.h>
 #include <log_manager.h>
@@ -569,12 +569,11 @@ createInstance(SERVICE *service, char **options)
         mkdir_rval = mkdir(inst->binlogdir, 0700);
         if (mkdir_rval == -1)
         {
-            char err_msg[STRERROR_BUFLEN];
             MXS_ERROR("Service %s, Failed to create binlog directory '%s': [%d] %s",
                       service->name,
                       inst->binlogdir,
                       errno,
-                      strerror_r(errno, err_msg, sizeof(err_msg)));
+                      mxs_strerror(errno));
 
             free_instance(inst);
             return NULL;
@@ -874,7 +873,7 @@ newSession(ROUTER *instance, SESSION *session)
 
     MXS_DEBUG("binlog router: %lu [newSession] new router session with "
               "session %p, and inst %p.",
-              pthread_self(),
+              thread_self(),
               session,
               inst);
 
@@ -971,7 +970,7 @@ static void freeSession(ROUTER* router_instance,
 
     MXS_DEBUG("%lu [freeSession] Unlinked router_client_session %p from "
               "router %p. Connections : %d. ",
-              pthread_self(),
+              thread_self(),
               slave,
               router,
               prev_val - 1);
@@ -1629,7 +1628,7 @@ errorReply(ROUTER *instance,
     ROUTER_INSTANCE *router = (ROUTER_INSTANCE *)instance;
     int error;
     socklen_t len;
-    char msg[STRERROR_BUFLEN + 1 + 5] = "";
+    char msg[200];
     char *errmsg;
     unsigned long mysql_errno;
 
@@ -1689,8 +1688,7 @@ errorReply(ROUTER *instance,
         getsockopt(router->master->fd, SOL_SOCKET, SO_ERROR, &error, &len) == 0 &&
         error != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
-        sprintf(msg, "%s ", strerror_r(error, errbuf, sizeof(errbuf)));
+        sprintf(msg, "%s ", mxs_strerror(error));
     }
     else
     {

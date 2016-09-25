@@ -35,6 +35,7 @@
 #include <gw.h>
 #include <secrets.h>
 #include <utils.h>
+#include <thread.h>
 
 /* @see function load_module in load_utils.c for explanation of the following
  * lint directives.
@@ -454,7 +455,7 @@ int gw_find_mysql_user_password_sha1(char *username, uint8_t *gateway_password, 
     }
 
     MXS_DEBUG("%lu [MySQL Client Auth], checking user [%s@%s]%s%s",
-              pthread_self(),
+              thread_self(),
               key.user,
               dcb->remote,
               key.resource != NULL ? " db: " : "",
@@ -526,7 +527,7 @@ int gw_find_mysql_user_password_sha1(char *username, uint8_t *gateway_password, 
 
             MXS_DEBUG("%lu [MySQL Client Auth], checking user [%s@%s] with "
                       "wildcard host [%%]",
-                      pthread_self(),
+                      thread_self(),
                       key.user,
                       dcb->remote);
 
@@ -544,7 +545,7 @@ int gw_find_mysql_user_password_sha1(char *username, uint8_t *gateway_password, 
                  */
 
                 MXS_DEBUG("%lu [MySQL Client Auth], user [%s@%s] not existent",
-                          pthread_self(),
+                          thread_self(),
                           key.user,
                           dcb->remote);
 

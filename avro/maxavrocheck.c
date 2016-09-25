@@ -15,6 +15,7 @@
  * @file maxavrocheck.c - Simple Avro file validator
  */
 
+#include <platform.h>
 #include <maxavro.h>
 #include <stdio.h>
 #include <string.h>

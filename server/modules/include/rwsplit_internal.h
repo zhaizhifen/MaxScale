@@ -19,12 +19,12 @@ extern "C" {
 #endif
 
 #include <query_classifier.h>
-    
+
 /* This needs to be removed along with dependency on it - see the 
  * rwsplit_tmp_table_multi functions
  */
 #include <mysql_client_server_protocol.h>
-    
+
 /*
  * The following are implemented in rwsplit_mysql.c
  */

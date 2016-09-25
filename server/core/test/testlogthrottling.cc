@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <log_manager.h>
+#include <sched.h>
 
 using std::cerr;
 using std::cout;
@@ -78,7 +79,7 @@ void log_messages(uint32_t id, size_t n_generate, int priority)
     {
         MXS_LOG_MESSAGE(priority, "[%u] Message %lu.", id, i);
 
-        pthread_yield();
+        sched_yield();
     }
 }
 

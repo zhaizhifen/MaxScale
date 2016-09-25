@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <maxscale/alloc.h>
-
+#include <thread.h>
 #include <router.h>
 #include <readwritesplit.h>
 #include <rwsplit_internal.h>
@@ -816,7 +816,7 @@ route_target_t get_route_target(ROUTER_CLIENT_SES *rses,
         {
             target = TARGET_MASTER; /*< override */
             MXS_DEBUG("%lu [get_route_target] Hint: route to master.",
-                      pthread_self());
+                      thread_self());
             break;
         }
         else if (hint->type == HINT_ROUTE_TO_NAMED_SERVER)
@@ -828,7 +828,7 @@ route_target_t get_route_target(ROUTER_CLIENT_SES *rses,
             target |= TARGET_NAMED_SERVER;
             MXS_DEBUG("%lu [get_route_target] Hint: route to "
                       "named server : ",
-                      pthread_self());
+                      thread_self());
         }
         else if (hint->type == HINT_ROUTE_TO_UPTODATE_SERVER)
         {
@@ -858,7 +858,7 @@ route_target_t get_route_target(ROUTER_CLIENT_SES *rses,
             target = TARGET_SLAVE;
             MXS_DEBUG("%lu [get_route_target] Hint: route to "
                       "slave.",
-                      pthread_self());
+                      thread_self());
         }
         hint = hint->next;
     } /*< while (hint != NULL) */

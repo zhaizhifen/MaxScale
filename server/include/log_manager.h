@@ -16,15 +16,16 @@
 #include <stdbool.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <platform.h>
+#include <locale.h>
+#include <string.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-/*
- * We need a common.h file that is included by every component.
- */
-#if !defined(STRERROR_BUFLEN)
+/** strerror_r buffer size, deprecated */
+#ifndef STRERROR_BUFLEN
 #define STRERROR_BUFLEN 512
 #endif
 
@@ -114,6 +115,9 @@ typedef struct mxs_log_throttling
     size_t window_ms;   // ...during this many milliseconds.
     size_t suppress_ms; // If exceeded, suppress such messages for this many ms.
 } MXS_LOG_THROTTLING;
+
+/** Use this instead of calling strerror[_r] directly */
+#define mxs_strerror(A) strerror_l(A, uselocale(0))
 
 bool mxs_log_init(const char* ident, const char* logdir, mxs_log_target_t target);
 void mxs_log_finish(void);

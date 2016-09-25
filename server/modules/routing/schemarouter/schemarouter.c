@@ -32,6 +32,7 @@
 #include <maxscale/alloc.h>
 #include <maxscale/poll.h>
 #include <pcre.h>
+#include <thread.h>
 
 #define DEFAULT_REFRESH_INTERVAL 30.0
 
@@ -1214,7 +1215,7 @@ static void closeSession(ROUTER* instance, void* router_session)
     ROUTER_INSTANCE* inst;
     backend_ref_t*     backend_ref;
 
-    MXS_DEBUG("%lu [schemarouter:closeSession]", pthread_self());
+    MXS_DEBUG("%lu [schemarouter:closeSession]", thread_self());
 
     /**
      * router session can be NULL if newSession failed and it is discarding
@@ -3107,7 +3108,7 @@ static void rses_property_done(rses_property_t* prop)
         default:
             MXS_DEBUG("%lu [rses_property_done] Unknown property type %d "
                       "in property %p",
-                      pthread_self(),
+                      thread_self(),
                       prop->rses_prop_type,
                       prop);
             ss_dassert(false);
@@ -3454,7 +3455,7 @@ static bool execute_sescmd_in_backend(backend_ref_t* backend_ref)
 
         MXS_DEBUG("%lu [execute_sescmd_in_backend] Just before write, fd "
                   "%d : cmd %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb->fd,
                   STRPACKETTYPE(cmd));
         gwbuf_free(tmpbuf);
@@ -3604,7 +3605,7 @@ static void tracelog_routed_query(ROUTER_CLIENT_SES* rses,
             memcpy(querystr, startpos, len - 1);
             querystr[len - 1] = '\0';
             MXS_DEBUG("%lu [%s] %d bytes long buf, \"%s\" -> %s:%d %s dcb %p",
-                      pthread_self(),
+                      thread_self(),
                       funcname,
                       (int)buflen,
                       querystr,
@@ -3625,7 +3626,7 @@ static void tracelog_routed_query(ROUTER_CLIENT_SES* rses,
             memcpy(querystr, startpos, len - 1);
             querystr[len - 1] = '\0';
             MXS_DEBUG("%lu [%s] %d bytes long buf, \"%s\" -> %s:%d %s dcb %p",
-                      pthread_self(),
+                      thread_self(),
                       funcname,
                       (int)buflen,
                       querystr,

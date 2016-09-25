@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <mysql.h>
-
+#include <thread.h>
 #include <dcb.h>
 #include <service.h>
 #include <users.h>
@@ -312,7 +312,7 @@ replace_mysql_users(SERV_LISTENER *listener)
     {
         /* same data, nothing to do */
         MXS_DEBUG("%lu [replace_mysql_users] users' tables not switched, checksum is the same",
-                  pthread_self());
+                  thread_self());
 
         /* free the new table */
         users_free(newusers);
@@ -322,7 +322,7 @@ replace_mysql_users(SERV_LISTENER *listener)
     {
         /* replace the service with effective new data */
         MXS_DEBUG("%lu [replace_mysql_users] users' tables replaced, checksum differs",
-                  pthread_self());
+                  thread_self());
         listener->users = newusers;
     }
 

@@ -35,8 +35,10 @@
 
 #define DEFAULT_NBPOLLS         3       /**< Default number of non block polls before we block */
 #define DEFAULT_POLLSLEEP       1000    /**< Default poll wait time (milliseconds) */
-#define _RELEASE_STR_LENGTH     256     /**< release len */
+#define RELEASE_STR_LENGTH     256     /**< release len */
+#define SYSNAME_LENGTH         256
 #define DEFAULT_NTHREADS        1 /**< Default number of polling threads */
+
 /**
  * Maximum length for configuration parameter value.
  */
@@ -109,8 +111,8 @@ typedef struct
 {
     int           n_threads;                           /**< Number of polling threads */
     char          *version_string;                     /**< The version string of embedded db library */
-    char          release_string[_RELEASE_STR_LENGTH]; /**< The release name string of the system */
-    char          sysname[_UTSNAME_SYSNAME_LENGTH];    /**< The OS name of the system */
+    char          release_string[RELEASE_STR_LENGTH]; /**< The release name string of the system */
+    char          sysname[SYSNAME_LENGTH];    /**< The OS name of the system */
     uint8_t       mac_sha1[SHA_DIGEST_LENGTH];         /**< The SHA1 digest of an interface MAC address */
     unsigned long id;                                  /**< MaxScale ID */
     unsigned int  n_nbpoll;                            /**< Tune number of non-blocking polls */

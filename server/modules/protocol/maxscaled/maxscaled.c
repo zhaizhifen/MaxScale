@@ -162,10 +162,8 @@ static bool authenticate_socket(MAXSCALED *protocol, DCB *dcb)
     }
     else
     {
-        char errbuf[STRERROR_BUFLEN];
-
         MXS_ERROR("Could not get socket family of client connection: %s",
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
     }
 
     return authenticated;

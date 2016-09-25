@@ -172,9 +172,6 @@
 /* string len for COM_STATISTICS output */
 #define BLRM_COM_STATISTICS_SIZE        1000
 
-/* string len for strerror_r message */
-#define BLRM_STRERROR_R_MSG_SIZE        128
-
 /* string len for task message name */
 #define BLRM_TASK_NAME_LEN              80
 
@@ -389,7 +386,7 @@ typedef struct router_slave
     time_t          lastReply;      /*< Last event sent */
     // lsi: Last Sent Information
     blr_thread_role_t lsi_sender_role; /*< Master or slave code sent */
-    THREAD            lsi_sender_tid;  /*< Who sent */
+    size_t            lsi_sender_tid;  /*< Who sent */
     char              lsi_binlog_name[BINLOG_FNAMELEN + 1]; /*< Which binlog file */
     uint32_t          lsi_binlog_pos; /*< What position */
 #if defined(SS_DEBUG)

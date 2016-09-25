@@ -27,6 +27,8 @@
 #include <log_manager.h>
 #include <secrets.h>
 #include <skygw_utils.h>
+#include <unistd.h>
+#include <getopt.h>
 
 struct option options[] =
 {

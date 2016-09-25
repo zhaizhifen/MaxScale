@@ -55,12 +55,6 @@
 #endif
 
 #include <maxadmin.h>
-/*
- * We need a common.h file that is included by every component.
- */
-#if !defined(STRERROR_BUFLEN)
-#define STRERROR_BUFLEN 512
-#endif
 
 #define MAX_PASSWORD_LEN 80
 
@@ -430,27 +424,24 @@ connectUsingUnixSocket(const char *conn_socket)
             }
             else
             {
-                char errbuf[STRERROR_BUFLEN];
                 fprintf(stderr, "Could not set SO_PASSCRED: %s\n",
-                        strerror_r(errno, errbuf, sizeof(errbuf)));
+                        strerror(errno));
                 close(so);
                 so = -1;
             }
         }
         else
         {
-            char errbuf[STRERROR_BUFLEN];
             fprintf(stderr, "Unable to connect to MaxScale at %s: %s\n",
-                    conn_socket, strerror_r(errno, errbuf, sizeof(errbuf)));
+                    conn_socket, strerror(errno));
             close(so);
             so = -1;
         }
     }
     else
     {
-        char errbuf[STRERROR_BUFLEN];
         fprintf(stderr, "Unable to create socket: %s\n",
-                strerror_r(errno, errbuf, sizeof(errbuf)));
+                strerror(errno));
     }
 
     return so;
@@ -494,18 +485,16 @@ connectUsingInetSocket(const char *hostname, const char *port,
         }
         else
         {
-            char errbuf[STRERROR_BUFLEN];
             fprintf(stderr, "Unable to connect to MaxScale at %s, %s: %s\n",
-                    hostname, port, strerror_r(errno, errbuf, sizeof(errbuf)));
+                    hostname, port, strerror(errno));
             close(so);
             so = -1;
         }
     }
     else
     {
-        char errbuf[STRERROR_BUFLEN];
         fprintf(stderr, "Unable to create socket: %s\n",
-                strerror_r(errno, errbuf, sizeof(errbuf)));
+                strerror(errno));
     }
 
     return so;
@@ -521,7 +510,6 @@ connectUsingInetSocket(const char *hostname, const char *port,
 static int
 setipaddress(struct in_addr *a, const char *p)
 {
-#ifdef __USE_POSIX
     struct addrinfo *ai = NULL, hint;
     int rc;
     struct sockaddr_in * res_addr;
@@ -546,28 +534,6 @@ setipaddress(struct in_addr *a, const char *p)
 
         return 1;
     }
-#else
-    struct hostent *h;
-
-    spinlock_acquire(&tmplock);
-    h = gethostbyname(p);
-    spinlock_release(&tmplock);
-
-    if (h == NULL)
-    {
-        if ((a->s_addr = inet_addr(p)) == -1)
-        {
-            return 0;
-        }
-    }
-    else
-    {
-        /* take the first one */
-        memcpy(a, h->h_addr, h->h_length);
-
-        return 1;
-    }
-#endif
     return 0;
 }
 

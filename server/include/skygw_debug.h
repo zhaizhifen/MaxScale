@@ -442,7 +442,7 @@ typedef enum skygw_chk_t
 
 #define CHK_MUTEXED_FOR_THR(b,l) {                                      \
         ss_info_dassert(!b ||                                           \
-            (b && (l->srw_rwlock_thr == pthread_self())),               \
+            (b && (l->srw_rwlock_thr == thread_self())),               \
             "rwlock is not acquired although it should be.");           \
     }
 

@@ -37,6 +37,7 @@
  *
  * @endverbatim
  */
+#include <platform.h>
 #include <buffer.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -121,9 +122,8 @@ gwbuf_alloc(unsigned int size)
 retblock:
     if (rval == NULL)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Memory allocation failed due to %s.",
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
     }
 #if defined(BUFFER_TRACE)
     else

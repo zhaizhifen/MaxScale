@@ -83,7 +83,7 @@
 #include <dcb.h>
 #include <spinlock.h>
 #include <modinfo.h>
-
+#include <thread.h>
 #include <skygw_types.h>
 #include <skygw_utils.h>
 #include <log_manager.h>
@@ -406,7 +406,7 @@ newSession(ROUTER *instance, SESSION *session)
 
     MXS_DEBUG("%lu [newSession] new router session with session "
               "%p, and inst %p.",
-              pthread_self(),
+              thread_self(),
               session,
               inst);
 
@@ -454,7 +454,7 @@ newSession(ROUTER *instance, SESSION *session)
             MXS_DEBUG("%lu [newSession] Examine server in port %d with "
                       "%d connections. Status is %s, "
                       "inst->bitvalue is %d",
-                      pthread_self(),
+                      thread_self(),
                       inst->servers[i]->server->port,
                       inst->servers[i]->current_connection_count,
                       STRSRVSTATUS(inst->servers[i]->server),
@@ -573,7 +573,7 @@ newSession(ROUTER *instance, SESSION *session)
     client_rses->backend = candidate;
     MXS_DEBUG("%lu [newSession] Selected server in port %d. "
               "Connections : %d\n",
-              pthread_self(),
+              thread_self(),
               candidate->server->port,
               candidate->current_connection_count);
 
@@ -666,7 +666,7 @@ static void freeSession(ROUTER* router_instance, void* router_client_ses)
 
     MXS_DEBUG("%lu [freeSession] Unlinked router_client_session %p from "
               "router %p and from server on port %d. Connections : %d. ",
-              pthread_self(),
+              thread_self(),
               router_cli_ses,
               router,
               router_cli_ses->backend->server->port,

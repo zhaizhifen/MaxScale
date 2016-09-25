@@ -1,0 +1,105 @@
+#ifndef _PLATFORM_H
+#define _PLATFORM_H
+/*
+ * Copyright (c) 2016 MariaDB Corporation Ab
+ *
+ * Use of this software is governed by the Business Source License included
+ * in the LICENSE.TXT file and at www.mariadb.com/bsl.
+ *
+ * Change Date: 2019-07-01
+ *
+ * On the date above, in accordance with the Business Source License, use
+ * of this software will be governed by version 2 or later of the General
+ * Public License.
+ */
+
+#if !defined(__cplusplus)
+
+#if __STDC_VERSION__ >= 201112
+
+#if defined(__STDC_NO_THREADS__)
+#define thread_local _Thread_local
+#else
+#include <threads.h>
+#endif
+
+#else // __STDC_VERSION >= 201112
+
+#if defined(__GNUC__)
+#define thread_local __thread
+#else
+#error Do not know how to define thread_local on this compiler/OS platform.
+#endif
+
+#endif
+
+#else // __cplusplus
+
+// C++11 supports thread_local natively.
+#if __cplusplus < 201103
+
+#if defined(__GNUC__)
+#define thread_local __thread
+#else
+#error Do not know how to define thread_local on this compiler/OS platform.
+#endif
+
+#endif // __cplusplus < 201103
+
+#endif // __cplusplus
+
+/**
+ * The following defines are configured by CMake
+ */
+
+#cmakedefine MXS_HAVE_ARPA_INET
+#cmakedefine MXS_HAVE_CRYPT
+#cmakedefine MXS_HAVE_CTYPE
+#cmakedefine MXS_HAVE_DIRENT
+#cmakedefine MXS_HAVE_DLFCN
+#cmakedefine MXS_HAVE_ERRNO
+#cmakedefine MXS_HAVE_EXECINFO
+#cmakedefine MXS_HAVE_FCNTL
+#cmakedefine MXS_HAVE_FTW
+#cmakedefine MXS_HAVE_GETOPT
+#cmakedefine MXS_HAVE_INI
+#cmakedefine MXS_HAVE_MATH
+#cmakedefine MXS_HAVE_MEMLOG
+#cmakedefine MXS_HAVE_NETDB
+#cmakedefine MXS_HAVE_NETINET_IN
+#cmakedefine MXS_HAVE_OPENSSL_AES
+#cmakedefine MXS_HAVE_OPENSSL_SHA
+#cmakedefine MXS_HAVE_PTHREAD
+#cmakedefine MXS_HAVE_PWD
+#cmakedefine MXS_HAVE_RDTSC
+#cmakedefine MXS_HAVE_REGEX
+#cmakedefine MXS_HAVE_SIGNAL
+#cmakedefine MXS_HAVE_STDARG
+#cmakedefine MXS_HAVE_STDBOOL
+#cmakedefine MXS_HAVE_STDINT
+#cmakedefine MXS_HAVE_STDIO
+#cmakedefine MXS_HAVE_STDLIB
+#cmakedefine MXS_HAVE_STRING
+#cmakedefine MXS_HAVE_STRINGS
+#cmakedefine MXS_HAVE_SYS_EPOLL
+#cmakedefine MXS_HAVE_SYS_IOCTL
+#cmakedefine MXS_HAVE_SYSLOG
+#cmakedefine MXS_HAVE_SYS_PARAM
+#cmakedefine MXS_HAVE_SYS_SOCKET
+#cmakedefine MXS_HAVE_SYS_STAT
+#cmakedefine MXS_HAVE_SYS_TIME
+#cmakedefine MXS_HAVE_SYS_TYPES
+#cmakedefine MXS_HAVE_SYS_UN
+#cmakedefine MXS_HAVE_TIME
+#cmakedefine MXS_HAVE_UNISTD
+#cmakedefine MXS_HAVE_LIBAIO
+#cmakedefine MXS_HAVE_LIBSSL
+#cmakedefine MXS_HAVE_LIBCRYPT
+#cmakedefine MXS_HAVE_LIBCRYPTO
+#cmakedefine MXS_HAVE_LIBZ
+#cmakedefine MXS_HAVE_LIBM
+#cmakedefine MXS_HAVE_LIBDL
+#cmakedefine MXS_HAVE_LIBRT
+#cmakedefine MXS_HAVE_LIBPTHREAD
+
+#endif // _PLATFORM_H

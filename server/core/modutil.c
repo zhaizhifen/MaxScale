@@ -24,6 +24,7 @@
  *
  * @endverbatim
  */
+
 #include <buffer.h>
 #include <string.h>
 #include <mysql_client_server_protocol.h>
@@ -31,6 +32,7 @@
 #include <maxscale/poll.h>
 #include <modutil.h>
 #include <strings.h>
+#include <maxscale/poll.h>
 
 /** These are used when converting MySQL wildcards to regular expressions */
 static SPINLOCK re_lock = SPINLOCK_INIT;

@@ -15,6 +15,9 @@ set(WITH_MAXSCALE_CNF TRUE CACHE BOOL "Install the template maxscale.cnf file")
 # Use static version of libmysqld
 set(STATIC_EMBEDDED TRUE CACHE BOOL "Use static version of libmysqld")
 
+# Build the cache filter
+set(BUILD_CACHE TRUE CACHE BOOL "Build the cache filter")
+
 # Build RabbitMQ components
 set(BUILD_RABBITMQ TRUE CACHE BOOL "Build RabbitMQ components")
 

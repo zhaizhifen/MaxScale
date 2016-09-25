@@ -15,7 +15,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <thread.h>
 #include <router.h>
 #include <readwritesplit.h>
 #include <rwsplit_internal.h>
@@ -605,7 +605,7 @@ static void closeSession(ROUTER *instance, void *router_session)
     ROUTER_CLIENT_SES *router_cli_ses;
     backend_ref_t *backend_ref;
 
-    MXS_DEBUG("%lu [RWSplit:closeSession]", pthread_self());
+    MXS_DEBUG("%lu [RWSplit:closeSession]", thread_self());
 
     /**
      * router session can be NULL if newSession failed and it is discarding
@@ -928,7 +928,7 @@ static void clientReply(ROUTER *instance, void *router_session, GWBUF *writebuf,
     if (sescmd_cursor_is_active(scur))
     {
         check_session_command_reply(writebuf, scur, bref);
-                
+
         if (GWBUF_IS_TYPE_SESCMD_RESPONSE(writebuf))
         {
             /**
@@ -1405,7 +1405,7 @@ void rses_property_done(rses_property_t *prop)
 
         default:
             MXS_DEBUG("%lu [rses_property_done] Unknown property type %d "
-                      "in property %p", pthread_self(), prop->rses_prop_type, prop);
+                      "in property %p", thread_self(), prop->rses_prop_type, prop);
 
             ss_dassert(false);
             break;
@@ -1539,7 +1539,7 @@ int router_handle_state_switch(DCB *dcb, DCB_REASON reason, void *data)
     }
 
     MXS_DEBUG("%lu [router_handle_state_switch] %s %s:%d in state %s",
-              pthread_self(), STRDCBREASON(reason), srv->name, srv->port,
+              thread_self(), STRDCBREASON(reason), srv->name, srv->port,
               STRSRVSTATUS(srv));
     CHK_SESSION(((SESSION *)dcb->session));
     if (dcb->session->router_session)

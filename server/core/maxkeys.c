@@ -28,6 +28,8 @@
 #include <skygw_utils.h>
 #include <log_manager.h>
 #include <gwdirs.h>
+#include <unistd.h>
+#include <getopt.h>
 
 struct option options[] =
 {

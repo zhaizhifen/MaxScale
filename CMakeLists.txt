@@ -117,6 +117,7 @@ configure_file(${CMAKE_SOURCE_DIR}/server/include/version.h.in ${CMAKE_BINARY_DI
 configure_file(${CMAKE_SOURCE_DIR}/server/include/gwdirs.h.in ${CMAKE_BINARY_DIR}/server/include/gwdirs.h @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/server/include/adminusers.h.in ${CMAKE_BINARY_DIR}/server/include/adminusers.h @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/server/test/maxscale_test.h.in ${CMAKE_BINARY_DIR}/server/include/maxscale_test.h @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/server/include/platform.h.in ${CMAKE_BINARY_DIR}/server/include/platform.h @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/etc/postinst.in ${CMAKE_BINARY_DIR}/postinst @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/etc/postrm.in ${CMAKE_BINARY_DIR}/postrm @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/server/test/maxscale_test.cnf ${CMAKE_BINARY_DIR}/maxscale.cnf @ONLY)

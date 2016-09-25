@@ -91,6 +91,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <maxscale/alloc.h>
+#include <thread.h>
 
 #if defined(FAKE_CODE)
 unsigned char dcb_fake_write_errno[10240];
@@ -526,7 +527,7 @@ dcb_process_zombies(int threadid)
                 MXS_DEBUG("%lu [%s] Remove dcb "
                           "%p fd %d in state %s from the "
                           "list of zombies.",
-                          pthread_self(),
+                          thread_self(),
                           __func__,
                           zombiedcb,
                           zombiedcb->fd,
@@ -590,7 +591,7 @@ dcb_process_victim_queue(DCB *listofdcb)
                 MXS_ERROR("%lu [%s] Error : Removing DCB %p but was in state %s "
                           "which is not expected for a call to dcb_close, although it"
                           "should be processed correctly. ",
-                          pthread_self(),
+                          thread_self(),
                           __func__,
                           dcb,
                           STRDCBSTATE(dcb->state));
@@ -667,14 +668,13 @@ dcb_process_victim_queue(DCB *listofdcb)
             {
                 int eno = errno;
                 errno = 0;
-                char errbuf[STRERROR_BUFLEN];
                 MXS_ERROR("%lu [dcb_process_victim_queue] Error : Failed to close "
                           "socket %d on dcb %p due error %d, %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb->fd,
                           dcb,
                           eno,
-                          strerror_r(eno, errbuf, sizeof(errbuf)));
+                          mxs_strerror(eno));
             }
             else
             {
@@ -685,7 +685,7 @@ dcb_process_victim_queue(DCB *listofdcb)
 
                 MXS_DEBUG("%lu [dcb_process_victim_queue] Closed socket "
                           "%d on dcb %p.",
-                          pthread_self(),
+                          thread_self(),
                           dcb->fd,
                           dcb);
             }
@@ -748,7 +748,7 @@ dcb_connect(SERVER *server, SESSION *session, const char *protocol)
     if (user && strlen(user))
     {
         MXS_DEBUG("%lu [dcb_connect] Looking for persistent connection DCB "
-                  "user %s protocol %s\n", pthread_self(), user, protocol);
+                  "user %s protocol %s\n", thread_self(), user, protocol);
         dcb = server_get_persistent(server, user, protocol);
         if (dcb)
         {
@@ -759,19 +759,19 @@ dcb_connect(SERVER *server, SESSION *session, const char *protocol)
             {
                 MXS_DEBUG("%lu [dcb_connect] Failed to link to session, the "
                           "session has been removed.\n",
-                          pthread_self());
+                          thread_self());
                 dcb_close(dcb);
                 return NULL;
             }
             MXS_DEBUG("%lu [dcb_connect] Reusing a persistent connection, dcb %p\n",
-                      pthread_self(), dcb);
+                      thread_self(), dcb);
             dcb->persistentstart = 0;
             return dcb;
         }
         else
         {
             MXS_DEBUG("%lu [dcb_connect] Failed to find a reusable persistent connection.\n",
-                      pthread_self());
+                      thread_self());
         }
     }
 
@@ -800,7 +800,7 @@ dcb_connect(SERVER *server, SESSION *session, const char *protocol)
     {
         MXS_DEBUG("%lu [dcb_connect] Failed to link to session, the "
                   "session has been removed.",
-                  pthread_self());
+                  thread_self());
         dcb_final_free(dcb);
         return NULL;
     }
@@ -810,7 +810,7 @@ dcb_connect(SERVER *server, SESSION *session, const char *protocol)
     {
         MXS_DEBUG("%lu [dcb_connect] Failed to connect to server %s:%d, "
                   "from backend dcb %p, client dcp %p fd %d.",
-                  pthread_self(),
+                  thread_self(),
                   server->name,
                   server->port,
                   dcb,
@@ -824,7 +824,7 @@ dcb_connect(SERVER *server, SESSION *session, const char *protocol)
     {
         MXS_DEBUG("%lu [dcb_connect] Connected to server %s:%d, "
                   "from backend dcb %p, client dcp %p fd %d.",
-                  pthread_self(),
+                  thread_self(),
                   server->name,
                   server->port,
                   dcb,
@@ -911,7 +911,7 @@ int dcb_read(DCB   *dcb,
     {
         /* <editor-fold defaultstate="collapsed" desc=" Error Logging "> */
         MXS_ERROR("%lu [dcb_read] Error : Read failed, dcb is %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb->fd == DCBFD_CLOSED ? "closed" : "cloned, not readable");
         /* </editor-fold> */
         return 0;
@@ -940,7 +940,7 @@ int dcb_read(DCB   *dcb,
                 /* <editor-fold defaultstate="collapsed" desc=" Debug Logging "> */
                 MXS_DEBUG("%lu [dcb_read] Read %d bytes from dcb %p in state %s "
                           "fd %d.",
-                          pthread_self(),
+                          thread_self(),
                           nsingleread,
                           dcb,
                           STRDCBSTATE(dcb->state),
@@ -972,16 +972,15 @@ dcb_bytes_readable(DCB *dcb)
 
     if (-1 == ioctl(dcb->fd, FIONREAD, &bytesavailable))
     {
-        char errbuf[STRERROR_BUFLEN];
         /* <editor-fold defaultstate="collapsed" desc=" Error Logging "> */
         MXS_ERROR("%lu [dcb_read] Error : ioctl FIONREAD for dcb %p in "
                   "state %s fd %d failed due error %d, %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state),
                   dcb->fd,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         /* </editor-fold> */
         return -1;
     }
@@ -1050,15 +1049,14 @@ dcb_basic_read(DCB *dcb, int bytesavailable, int maxbytes, int nreadtotal, int *
          * This is a fatal error which should cause shutdown.
          * Todo shutdown if memory allocation fails.
          */
-        char errbuf[STRERROR_BUFLEN];
         /* <editor-fold defaultstate="collapsed" desc=" Error Logging "> */
         MXS_ERROR("%lu [dcb_read] Error : Failed to allocate read buffer "
                   "for dcb %p fd %d, due %d, %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->fd,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         /* </editor-fold> */
         *nsingleread = -1;
     }
@@ -1071,16 +1069,15 @@ dcb_basic_read(DCB *dcb, int bytesavailable, int maxbytes, int nreadtotal, int *
         {
             if (errno != 0 && errno != EAGAIN && errno != EWOULDBLOCK)
             {
-                char errbuf[STRERROR_BUFLEN];
                 /* <editor-fold defaultstate="collapsed" desc=" Error Logging "> */
                 MXS_ERROR("%lu [dcb_read] Error : Read failed, dcb %p in state "
                           "%s fd %d, due %d, %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb,
                           STRDCBSTATE(dcb->state),
                           dcb->fd,
                           errno,
-                          strerror_r(errno, errbuf, sizeof(errbuf)));
+                          mxs_strerror(errno));
                 /* </editor-fold> */
             }
             gwbuf_free(buffer);
@@ -1168,7 +1165,7 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
         /* Successful read */
         MXS_DEBUG("%lu [%s] Read %d bytes from dcb %p in state %s "
                   "fd %d.",
-                  pthread_self(),
+                  thread_self(),
                   __func__,
                   *nsingleread,
                   dcb,
@@ -1180,15 +1177,14 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
              * This is a fatal error which should cause shutdown.
              * Todo shutdown if memory allocation fails.
              */
-            char errbuf[STRERROR_BUFLEN];
             /* <editor-fold defaultstate="collapsed" desc=" Error Logging "> */
             MXS_ERROR("%lu [dcb_read] Error : Failed to allocate read buffer "
                       "for dcb %p fd %d, due %d, %s.",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd,
                       errno,
-                      strerror_r(errno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(errno));
             /* </editor-fold> */
             *nsingleread = -1;
             return NULL;
@@ -1211,7 +1207,7 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
     case SSL_ERROR_ZERO_RETURN:
         /* react to the SSL connection being closed */
         MXS_DEBUG("%lu [%s] SSL connection appears to have hung up",
-                  pthread_self(),
+                  thread_self(),
                   __func__
                 );
         poll_fake_hangup_event(dcb);
@@ -1221,7 +1217,7 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
     case SSL_ERROR_WANT_READ:
         /* Prevent SSL I/O on connection until retried, return to poll loop */
         MXS_DEBUG("%lu [%s] SSL connection want read",
-                  pthread_self(),
+                  thread_self(),
                   __func__
                 );
         spinlock_acquire(&dcb->writeqlock);
@@ -1234,7 +1230,7 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
     case SSL_ERROR_WANT_WRITE:
         /* Prevent SSL I/O on connection until retried, return to poll loop */
         MXS_DEBUG("%lu [%s] SSL connection want write",
-                  pthread_self(),
+                  thread_self(),
                   __func__
                 );
         spinlock_acquire(&dcb->writeqlock);
@@ -1266,7 +1262,6 @@ dcb_basic_read_SSL(DCB *dcb, int *nsingleread)
 static int
 dcb_log_errors_SSL (DCB *dcb, const char *called_by, int ret)
 {
-    char errbuf[STRERROR_BUFLEN];
     unsigned long ssl_errno;
 
     ssl_errno = ERR_get_error();
@@ -1288,15 +1283,14 @@ dcb_log_errors_SSL (DCB *dcb, const char *called_by, int ret)
     {
         int local_errno = errno;
         MXS_ERROR("SSL error caused by TCP error %d %s",
-                  local_errno,
-                  strerror_r(local_errno, errbuf, sizeof(errbuf))
-                 );
+                  local_errno, mxs_strerror(local_errno));
     }
     else
     {
         while (ssl_errno != 0)
         {
-            ERR_error_string_n(ssl_errno, errbuf, STRERROR_BUFLEN);
+            char errbuf[200]; // A maximum of 120 characters is used
+            ERR_error_string_n(ssl_errno, errbuf, sizeof(errbuf));
             MXS_ERROR("%s", errbuf);
             ssl_errno = ERR_get_error();
         }
@@ -1338,7 +1332,7 @@ dcb_write(DCB *dcb, GWBUF *queue)
     dcb->stats.n_buffered++;
     MXS_DEBUG("%lu [dcb_write] Append to writequeue. %d writes "
               "buffered for dcb %p in state %s fd %d",
-              pthread_self(),
+              thread_self(),
               dcb->stats.n_buffered,
               dcb,
               STRDCBSTATE(dcb->state),
@@ -1420,7 +1414,7 @@ dcb_write_parameter_check(DCB *dcb, GWBUF *queue)
         {
             MXS_DEBUG("%lu [dcb_write] Write aborted to dcb %p because "
                       "it is in state %s",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       STRDCBSTATE(dcb->state));
             gwbuf_free(queue);
@@ -1444,16 +1438,15 @@ dcb_log_write_failure(DCB *dcb, GWBUF *queue, int eno)
     {
         if (eno == EPIPE)
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_DEBUG("%lu [dcb_write] Write to dcb "
                       "%p in state %s fd %d failed "
                       "due errno %d, %s",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       STRDCBSTATE(dcb->state),
                       dcb->fd,
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(eno));
         }
     }
 
@@ -1463,7 +1456,6 @@ dcb_log_write_failure(DCB *dcb, GWBUF *queue, int eno)
             eno != EAGAIN &&
             eno != EWOULDBLOCK)
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_ERROR("Write to dcb %p in "
                       "state %s fd %d failed due "
                       "errno %d, %s",
@@ -1471,7 +1463,7 @@ dcb_log_write_failure(DCB *dcb, GWBUF *queue, int eno)
                       STRDCBSTATE(dcb->state),
                       dcb->fd,
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(eno));
 
         }
 
@@ -1497,12 +1489,11 @@ dcb_log_write_failure(DCB *dcb, GWBUF *queue, int eno)
         }
         if (dolog)
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_DEBUG("%lu [dcb_write] Writing to %s socket failed due %d, %s.",
-                      pthread_self(),
+                      thread_self(),
                       DCB_ROLE_CLIENT_HANDLER == dcb->dcb_role ? "client" : "backend server",
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(eno));
         }
     }
 }
@@ -1707,7 +1698,7 @@ dcb_close(DCB *dcb)
     {
         MXS_ERROR("%lu [dcb_close] Error : Removing DCB %p but was in state %s "
                   "which is not legal for a call to dcb_close. ",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
         raise(SIGABRT);
@@ -1790,7 +1781,7 @@ dcb_maybe_add_persistent(DCB *dcb)
     {
         DCB_CALLBACK *loopcallback;
         MXS_DEBUG("%lu [dcb_maybe_add_persistent] Adding DCB to persistent pool, user %s.\n",
-                  pthread_self(),
+                  thread_self(),
                   dcb->user);
         dcb->dcb_is_zombie = false;
         dcb->persistentstart = time(NULL);
@@ -1827,7 +1818,7 @@ dcb_maybe_add_persistent(DCB *dcb)
         MXS_DEBUG("%lu [dcb_maybe_add_persistent] Not adding DCB %p to persistent pool, "
                   "user %s, max for pool %ld, error handle called %s, hung flag %s, "
                   "server status %d, pool count %d.\n",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->user ? dcb->user : "",
                   (dcb->server && dcb->server->persistpoolmax) ? dcb->server->persistpoolmax : 0,
@@ -2453,7 +2444,7 @@ gw_write(DCB *dcb, GWBUF *writeq, bool *stop_writing)
                     snprintf(s, len, "%s", (char *)str);
                 }
                 MXS_INFO("%lu [gw_write] Wrote %d bytes : %s ",
-                         pthread_self(),
+                         thread_self(),
                          w,
                          s);
                 MXS_FREE(s);
@@ -2476,14 +2467,13 @@ gw_write(DCB *dcb, GWBUF *writeq, bool *stop_writing)
             saved_errno != EPIPE)
 #endif
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_ERROR("Write to dcb %p "
                       "in state %s fd %d failed due errno %d, %s",
                       dcb,
                       STRDCBSTATE(dcb->state),
                       dcb->fd,
                       saved_errno,
-                      strerror_r(saved_errno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(saved_errno));
         }
     }
     else
@@ -2632,7 +2622,7 @@ dcb_call_callback(DCB *dcb, DCB_REASON reason)
             spinlock_release(&dcb->cb_lock);
 
             MXS_DEBUG("%lu [dcb_call_callback] %s",
-                      pthread_self(),
+                      thread_self(),
                       STRDCBREASON(reason));
 
             cb->cb(dcb, reason, cb->userdata);
@@ -2667,7 +2657,7 @@ dcb_isvalid(DCB *dcb)
 void
 dcb_call_foreach(struct server* server, DCB_REASON reason)
 {
-    MXS_DEBUG("%lu [dcb_call_foreach]", pthread_self());
+    MXS_DEBUG("%lu [dcb_call_foreach]", thread_self());
 
     switch (reason) {
     case DCB_REASON_DRAINED:
@@ -3105,14 +3095,13 @@ dcb_accept(DCB *listener, GWPROTOCOL *protocol_funcs)
     int sendbuf;
     struct sockaddr_storage client_conn;
     socklen_t optlen = sizeof(sendbuf);
-    char errbuf[STRERROR_BUFLEN];
 
     if ((c_sock = dcb_accept_one_connection(listener, (struct sockaddr *)&client_conn)) >= 0)
     {
         listener->stats.n_accepts++;
 #if defined(SS_DEBUG)
         MXS_DEBUG("%lu [gw_MySQLAccept] Accepted fd %d.",
-                  pthread_self(),
+                  thread_self(),
                   c_sock);
 #endif /* SS_DEBUG */
 #if defined(FAKE_CODE)
@@ -3124,7 +3113,7 @@ dcb_accept(DCB *listener, GWPROTOCOL *protocol_funcs)
         if (setsockopt(c_sock, SOL_SOCKET, SO_SNDBUF, &sendbuf, optlen) != 0)
         {
             MXS_ERROR("Failed to set socket options. Error %d: %s",
-                      errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                      errno, mxs_strerror(errno));
         }
 
         sendbuf = GW_CLIENT_SO_RCVBUF;
@@ -3132,7 +3121,7 @@ dcb_accept(DCB *listener, GWPROTOCOL *protocol_funcs)
         if (setsockopt(c_sock, SOL_SOCKET, SO_RCVBUF, &sendbuf, optlen) != 0)
         {
             MXS_ERROR("Failed to set socket options. Error %d: %s",
-                      errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                      errno, mxs_strerror(errno));
         }
         setnonblocking(c_sock);
 
@@ -3263,7 +3252,6 @@ dcb_accept_one_connection(DCB *listener, struct sockaddr *client_conn)
 
         if (c_sock == -1)
         {
-            char errbuf[STRERROR_BUFLEN];
             /* Did not get a file descriptor */
             if (eno == EAGAIN || eno == EWOULDBLOCK)
             {
@@ -3283,16 +3271,16 @@ dcb_accept_one_connection(DCB *listener, struct sockaddr *client_conn)
                  * (EMFILE) max. number of files limit.
                  */
                 MXS_DEBUG("%lu [dcb_accept_one_connection] Error %d, %s. ",
-                          pthread_self(),
+                          thread_self(),
                           eno,
-                          strerror_r(eno, errbuf, sizeof(errbuf)));
+                          mxs_strerror(eno));
 
                 /* Log an error the first time this happens */
                 if (i == 0)
                 {
                     MXS_ERROR("Error %d, %s. Failed to accept new client connection.",
                               eno,
-                              strerror_r(eno, errbuf, sizeof(errbuf)));
+                              mxs_strerror(eno));
                 }
                 nanosecs = (long long)1000000 * 100 * i * i;
                 ts1.tv_sec = nanosecs / 1000000000;
@@ -3308,7 +3296,7 @@ dcb_accept_one_connection(DCB *listener, struct sockaddr *client_conn)
                  */
                 MXS_ERROR("Failed to accept new client connection due to %d, %s.",
                           eno,
-                          strerror_r(eno, errbuf, sizeof(errbuf)));
+                          mxs_strerror(eno));
                 break;
             }
         }
@@ -3355,12 +3343,11 @@ dcb_listen(DCB *listener, const char *config, const char *protocol_name)
 
     if (listen(listener_socket, 10 * SOMAXCONN) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to start listening on '%s' with protocol '%s': %d, %s",
                   config,
                   protocol_name,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         close(listener_socket);
         return -1;
     }
@@ -3409,10 +3396,9 @@ dcb_listen_create_socket_inet(const char *config_bind)
     /** Create the TCP socket */
     if ((listener_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Can't create socket: %i, %s",
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         return -1;
     }
 
@@ -3433,11 +3419,10 @@ dcb_listen_create_socket_inet(const char *config_bind)
 
     if (bind(listener_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to bind on '%s': %i, %s",
                   config_bind,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         close(listener_socket);
         return -1;
     }
@@ -3476,10 +3461,9 @@ dcb_listen_create_socket_unix(const char *config_bind)
     // UNIX socket create
     if ((listener_socket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Can't create UNIX socket: %i, %s",
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         return -1;
     }
 
@@ -3503,19 +3487,17 @@ dcb_listen_create_socket_unix(const char *config_bind)
 
     if ((-1 == unlink(config_bind)) && (errno != ENOENT))
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to unlink Unix Socket %s: %d %s",
-                  config_bind, errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                  config_bind, errno, mxs_strerror(errno));
     }
 
     /* Bind the socket to the Unix domain socket */
     if (bind(listener_socket, (struct sockaddr *) &local_addr, sizeof(local_addr)) < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to bind to UNIX Domain socket '%s': %i, %s",
                   config_bind,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         close(listener_socket);
         return -1;
     }
@@ -3523,11 +3505,10 @@ dcb_listen_create_socket_unix(const char *config_bind)
     /* set permission for all users */
     if (chmod(config_bind, 0777) < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to change permissions on UNIX Domain socket '%s': %i, %s",
                   config_bind,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
     }
     return listener_socket;
 }
@@ -3550,10 +3531,9 @@ dcb_set_socket_option(int sockfd, int level, int optname, void *optval, socklen_
 {
     if (setsockopt(sockfd, level, optname, optval, optlen) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to set socket options. Error %d: %s",
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         return -1;
     }
     return 0;

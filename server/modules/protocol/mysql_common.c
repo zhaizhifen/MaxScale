@@ -50,6 +50,7 @@
 #include <skygw_utils.h>
 #include <log_manager.h>
 #include <netinet/tcp.h>
+#include <thread.h>
 
 static server_command_t* server_command_init(server_command_t* srvcmd, mysql_server_cmd_t cmd);
 
@@ -448,7 +449,7 @@ int mysql_send_auth_error(DCB        *dcb,
     {
         MXS_DEBUG("%lu [mysql_send_auth_error] dcb %p is in a state %s, "
                   "and it is not in epoll set anymore. Skip error sending.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
         return 0;
@@ -789,7 +790,7 @@ mysql_server_cmd_t protocol_get_srv_command(MySQLProtocol* p,
         protocol_remove_srv_command(p);
     }
     MXS_DEBUG("%lu [protocol_get_srv_command] Read command %s for fd %d.",
-              pthread_self(),
+              thread_self(),
               STRPACKETTYPE(cmd),
               p->owner_dcb->fd);
     return cmd;

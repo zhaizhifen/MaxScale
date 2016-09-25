@@ -44,6 +44,7 @@
 #include <log_manager.h>
 #include <gw_ssl.h>
 #include <maxscale/alloc.h>
+#include <thread.h>
 
 static SPINLOCK server_spin = SPINLOCK_INIT;
 static SERVER *allServers = NULL;
@@ -201,7 +202,7 @@ server_get_persistent(SERVER *server, char *user, const char *protocol)
                 MXS_DEBUG("%lu [server_get_persistent] Rejected dcb "
                           "%p from pool, user %s looking for %s, protocol %s "
                           "looking for %s, hung flag %s, error handle called %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb,
                           dcb->user ? dcb->user : "NULL",
                           user,

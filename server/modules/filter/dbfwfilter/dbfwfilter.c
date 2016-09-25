@@ -1344,9 +1344,8 @@ static bool process_rule_file(const char* filename, FW_INSTANCE* instance)
     }
     else
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to open rule file '%s': %d, %s", filename, errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
 
     }
 

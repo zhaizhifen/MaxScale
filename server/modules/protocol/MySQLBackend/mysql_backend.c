@@ -55,6 +55,7 @@ uint8_t null_client_sha1[MYSQL_SCRAMBLE_LEN]="";
 #include <modinfo.h>
 #include <gw_protocol.h>
 #include <mysql_auth.h>
+#include <thread.h>
 
  /* @see function load_module in load_utils.c for explanation of the following
   * lint directives.
@@ -215,7 +216,7 @@ static int gw_create_backend_connection(DCB *backend_dcb,
     {
         MXS_DEBUG("%lu [gw_create_backend_connection] Failed to create "
                   "protocol object for backend connection.",
-                  pthread_self());
+                  thread_self());
         MXS_ERROR("Failed to create protocol object for backend connection.");
         goto return_fd;
     }
@@ -252,7 +253,7 @@ static int gw_create_backend_connection(DCB *backend_dcb,
             MXS_DEBUG("%lu [gw_create_backend_connection] Established "
                       "connection to %s:%i, protocol fd %d client "
                       "fd %d.",
-                      pthread_self(),
+                      thread_self(),
                       server->name,
                       server->port,
                       protocol->fd,
@@ -268,7 +269,7 @@ static int gw_create_backend_connection(DCB *backend_dcb,
             protocol->fd = fd;
             MXS_DEBUG("%lu [gw_create_backend_connection] Connection "
                       "pending to %s:%i, protocol fd %d client fd %d.",
-                      pthread_self(),
+                      thread_self(),
                       server->name,
                       server->port,
                       protocol->fd,
@@ -281,7 +282,7 @@ static int gw_create_backend_connection(DCB *backend_dcb,
             ss_dassert(protocol->protocol_auth_state == MYSQL_ALLOC);
             MXS_DEBUG("%lu [gw_create_backend_connection] Connection "
                       "failed to %s:%i, protocol fd %d client fd %d.",
-                      pthread_self(),
+                      thread_self(),
                       server->name,
                       server->port,
                       protocol->fd,
@@ -321,14 +322,13 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
 
     if (so < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Establishing connection to backend server "
                   "%s:%d failed.\n\t\t             Socket creation failed "
                   "due %d, %s.",
                   host,
                   port,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         rv = -1;
         goto return_rv;
     }
@@ -339,14 +339,13 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
 
     if (setsockopt(so, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize)) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to set socket options "
                   "%s:%d failed.\n\t\t             Socket configuration failed "
                   "due %d, %s.",
                   host,
                   port,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         rv = -1;
         /** Close socket */
         close_socket(so);
@@ -356,14 +355,13 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
 
     if (setsockopt(so, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize)) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to set socket options "
                   "%s:%d failed.\n\t\t             Socket configuration failed "
                   "due %d, %s.",
                   host,
                   port,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         rv = -1;
         /** Close socket */
         close_socket(so);
@@ -373,14 +371,13 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
     int one = 1;
     if (setsockopt(so, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one)) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to set socket options "
                   "%s:%d failed.\n\t\t             Socket configuration failed "
                   "due %d, %s.",
                   host,
                   port,
                   errno,
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
         rv = -1;
         /** Close socket */
         close_socket(so);
@@ -399,13 +396,12 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
         }
         else
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_ERROR("Failed to connect backend server %s:%d, "
                       "due %d, %s.",
                       host,
                       port,
                       errno,
-                      strerror_r(errno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(errno));
             /** Close socket */
             close_socket(so);
             goto return_rv;
@@ -414,7 +410,7 @@ gw_do_connect_to_backend(char *host, int port, int *fd)
     *fd = so;
     MXS_DEBUG("%lu [gw_do_connect_to_backend] Connected to backend server "
               "%s:%d, fd %d.",
-              pthread_self(), host, port, so);
+              thread_self(), host, port, so);
 #if defined(FAKE_CODE)
     conn_open[so] = true;
 #endif /* FAKE_CODE */
@@ -482,7 +478,7 @@ gw_read_backend_event(DCB *dcb)
 
     MXS_DEBUG("%lu [gw_read_backend_event] Read dcb %p fd %d protocol "
         "state %d, %s.",
-        pthread_self(),
+        thread_self(),
         dcb,
         dcb->fd,
         backend_protocol->protocol_auth_state,
@@ -512,7 +508,7 @@ gw_read_backend_event(DCB *dcb)
                 MXS_DEBUG("%lu [gw_read_backend_event] after "
                           "gw_read_backend_handshake, fd %d, "
                           "state = MYSQL_HANDSHAKE_FAILED.",
-                          pthread_self(),
+                          thread_self(),
                           backend_protocol->owner_dcb->fd);
             }
             else
@@ -603,7 +599,7 @@ gw_read_backend_handshake(MySQLProtocol *conn)
                 MXS_DEBUG("%lu [gw_read_backend_handshake] after "
                           "dcb_read, fd %d, "
                           "state = MYSQL_HANDSHAKE_FAILED.",
-                          pthread_self(),
+                          thread_self(),
                           dcb->fd);
 
                 return 1;
@@ -620,7 +616,7 @@ gw_read_backend_handshake(MySQLProtocol *conn)
                 MXS_DEBUG("%lu [gw_receive_backend_auth] Invalid "
                           "authentication message from backend dcb %p "
                           "fd %d, ptr[4] = %d, error code %d, msg %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb,
                           dcb->fd,
                           payload[4],
@@ -670,7 +666,7 @@ gw_read_backend_handshake(MySQLProtocol *conn)
                 MXS_DEBUG("%lu [gw_read_backend_handshake] after "
                           "gw_mysql_get_byte3, fd %d, "
                           "state = MYSQL_HANDSHAKE_FAILED.",
-                          pthread_self(),
+                          thread_self(),
                           dcb->fd);
 
                 return 1;
@@ -693,7 +689,7 @@ gw_read_backend_handshake(MySQLProtocol *conn)
                 MXS_DEBUG("%lu [gw_read_backend_handshake] after "
                           "gw_decode_mysql_server_handshake, fd %d, "
                           "state = MYSQL_HANDSHAKE_FAILED.",
-                          pthread_self(),
+                          thread_self(),
                           conn->owner_dcb->fd);
                 gwbuf_free(head);
                 return 1;
@@ -855,7 +851,7 @@ static bool gw_get_shared_session_auth_info(DCB* dcb, MYSQL_session* session)
     {
         MXS_ERROR("%lu [gw_get_shared_session_auth_info] Couldn't get "
                   "session authentication info. Session in a wrong state %d.",
-                  pthread_self(), dcb->session->state);
+                  thread_self(), dcb->session->state);
         rval = false;
     }
     spinlock_release(&dcb->session->ses_lock);
@@ -905,7 +901,7 @@ gw_read_reply_or_error(DCB *dcb, MYSQL_session local_session)
                     MXS_DEBUG("%lu [gw_read_backend_event] "
                           "gw_receive_backend_auth succeed. "
                           "dcb %p fd %d, user %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb,
                           dcb->fd,
                           local_session.user);
@@ -916,7 +912,7 @@ gw_read_reply_or_error(DCB *dcb, MYSQL_session local_session)
                           "gw_receive_backend_auth read "
                           "successfully "
                           "nothing. dcb %p fd %d, user %s.",
-                          pthread_self(),
+                          thread_self(),
                           dcb,
                           dcb->fd,
                           local_session.user);
@@ -952,7 +948,7 @@ gw_read_reply_or_error(DCB *dcb, MYSQL_session local_session)
             MXS_DEBUG("%lu [gw_read_backend_event] "
                   "calling handleError. Backend "
                   "DCB %p, session %p",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->session);
 #endif
@@ -993,7 +989,7 @@ gw_read_reply_or_error(DCB *dcb, MYSQL_session local_session)
             MXS_DEBUG("%lu [gw_read_backend_event] "
                   "gw_receive_backend_auth succeed. Fd %d, "
                   "user %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb->fd,
                   local_session.user);
 
@@ -1117,7 +1113,7 @@ gw_read_and_write(DCB *dcb, MYSQL_session local_session)
                 MXS_NOTICE("%lu [gw_read_backend_event] "
                            "Read buffer unexpectedly null, even though response "
                            "not marked as complete. User: %s",
-                           pthread_self(),
+                           thread_self(),
                            local_session.user);
                 return_code = 0;
                 goto return_rc;
@@ -1204,7 +1200,7 @@ static int gw_write_backend_event(DCB *dcb)
                                     "Writing to backend failed due invalid Maxscale state.");
             MXS_DEBUG("%lu [gw_write_backend_event] Write to backend "
                       "dcb %p fd %d failed due invalid state %s.",
-                      pthread_self(), dcb, dcb->fd, STRDCBSTATE(dcb->state));
+                      thread_self(), dcb, dcb->fd, STRDCBSTATE(dcb->state));
 
             MXS_ERROR("Attempt to write buffered data to backend "
                       "failed due internal inconsistent state.");
@@ -1213,7 +1209,7 @@ static int gw_write_backend_event(DCB *dcb)
         {
             MXS_DEBUG("%lu [gw_write_backend_event] Dcb %p in state %s "
                       "but there's nothing to write either.",
-                      pthread_self(), dcb, STRDCBSTATE(dcb->state));
+                      thread_self(), dcb, STRDCBSTATE(dcb->state));
             rc = 1;
         }
 
@@ -1231,7 +1227,7 @@ static int gw_write_backend_event(DCB *dcb)
 return_rc:
     MXS_DEBUG("%lu [gw_write_backend_event] "
               "wrote to dcb %p fd %d, return %d",
-              pthread_self(),
+              thread_self(),
               dcb,
               dcb->fd,
               rc);
@@ -1289,7 +1285,7 @@ static int gw_MySQLWrite_backend(DCB *dcb, GWBUF *queue)
 
             MXS_DEBUG("%lu [gw_MySQLWrite_backend] write to dcb %p "
                       "fd %d protocol state %s.",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd,
                       STRPROTOCOLSTATE(backend_protocol->protocol_auth_state));
@@ -1317,7 +1313,7 @@ static int gw_MySQLWrite_backend(DCB *dcb, GWBUF *queue)
         {
             MXS_DEBUG("%lu [gw_MySQLWrite_backend] delayed write to "
                       "dcb %p fd %d protocol state %s.",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd,
                       STRPROTOCOLSTATE(backend_protocol->protocol_auth_state));
@@ -1392,10 +1388,9 @@ static int gw_error_backend_event(DCB *dcb)
         {
             if (error != 0)
             {
-                char errstring[STRERROR_BUFLEN];
                 MXS_ERROR("DCB in state %s got error '%s'.",
                           STRDCBSTATE(dcb->state),
-                          strerror_r(error, errstring, sizeof(errstring)));
+                          mxs_strerror(error));
             }
         }
         return 1;
@@ -1430,9 +1425,8 @@ static int gw_error_backend_event(DCB *dcb)
         {
             if (error != 0)
             {
-                char errstring[STRERROR_BUFLEN];
                 MXS_ERROR("Error '%s' in session that is not ready for routing.",
-                          strerror_r(error, errstring, sizeof(errstring)));
+                          mxs_strerror(error));
             }
         }
         gwbuf_free(errbuf);
@@ -1534,10 +1528,9 @@ static int gw_backend_hangup(DCB *dcb)
         {
             if (error != 0 && ses_state != SESSION_STATE_STOPPING)
             {
-                char errstring[STRERROR_BUFLEN];
                 MXS_ERROR("Hangup in session that is not ready for routing, "
                           "Error reported is '%s'.",
-                          strerror_r(error, errstring, sizeof(errstring)));
+                          mxs_strerror(error));
             }
         }
         gwbuf_free(errbuf);
@@ -1592,7 +1585,7 @@ static int gw_backend_close(DCB *dcb)
     CHK_DCB(dcb);
     session = dcb->session;
 
-    MXS_DEBUG("%lu [gw_backend_close]", pthread_self());
+    MXS_DEBUG("%lu [gw_backend_close]", thread_self());
 
     quitbuf = mysql_create_com_quit(NULL, 0);
     gwbuf_set_type(quitbuf, GWBUF_TYPE_MYSQL);
@@ -1970,7 +1963,7 @@ static GWBUF* process_response_data(DCB* dcb,
         srvcmd = protocol_get_srv_command(p, false);
 
         MXS_DEBUG("%lu [process_response_data] Read command %s for DCB %p fd %d.",
-                  pthread_self(),
+                  thread_self(),
                   STRPACKETTYPE(srvcmd),
                   dcb,
                   dcb->fd);
@@ -2070,7 +2063,7 @@ static GWBUF* process_response_data(DCB* dcb,
                 {
                     MXS_DEBUG("%lu [%s] Read %d packets. Waiting for %d more "
                               "packets for a total of %d packets.",
-                              pthread_self(), __FUNCTION__,
+                              thread_self(), __FUNCTION__,
                               initial_packets - npackets_left,
                               npackets_left, initial_packets);
 
@@ -2262,7 +2255,7 @@ gw_receive_backend_auth(MySQLProtocol *protocol)
             MXS_DEBUG("%lu [gw_receive_backend_auth] Invalid "
                       "authentication message from backend dcb %p "
                       "fd %d, ptr[4] = %d, error %s, msg %s.",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd,
                       ptr[4],
@@ -2283,7 +2276,7 @@ gw_receive_backend_auth(MySQLProtocol *protocol)
             MXS_DEBUG("%lu [gw_receive_backend_auth] Invalid "
                       "authentication message from backend dcb %p "
                       "fd %d, ptr[4] = %d",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd,
                       ptr[4]);
@@ -2309,7 +2302,7 @@ gw_receive_backend_auth(MySQLProtocol *protocol)
         rc = 0;
         MXS_DEBUG("%lu [gw_receive_backend_auth] Read zero bytes from "
                   "backend dcb %p fd %d in state %s. n %d, head %p, len %ld",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->fd,
                   STRDCBSTATE(dcb->state),
@@ -2323,7 +2316,7 @@ gw_receive_backend_auth(MySQLProtocol *protocol)
         rc = -1;
         MXS_DEBUG("%lu [gw_receive_backend_auth] Reading from backend dcb %p "
                   "fd %d in state %s failed. n %d, head %p, len %ld",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->fd,
                   STRDCBSTATE(dcb->state),
@@ -2490,11 +2483,10 @@ close_socket(int sock)
     /*< Close newly created socket. */
     if (close(sock) != 0)
     {
-        char errbuf[STRERROR_BUFLEN];
         MXS_ERROR("Failed to close socket %d due %d, %s.",
             sock,
             errno,
-            strerror_r(errno, errbuf, sizeof(errbuf)));
+            mxs_strerror(errno));
     }
 
 }

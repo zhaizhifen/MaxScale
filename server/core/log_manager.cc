@@ -10,6 +10,8 @@
  * of this software will be governed by version 2 or later of the General
  * Public License.
  */
+#include <sched.h>
+#include <platform.h>
 #include <log_manager.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -714,7 +716,7 @@ void mxs_log_finish(void)
         while (lm != NULL && lm->lm_nlinks != 0)
         {
             release_lock(&lmlock);
-            pthread_yield();
+            sched_yield();
             acquire_lock(&lmlock);
         }
 
@@ -1386,7 +1388,7 @@ static bool logmanager_register(bool writep)
         while (lm != NULL && !lm->lm_enabled)
         {
             release_lock(&lmlock);
-            pthread_yield();
+            sched_yield();
             acquire_lock(&lmlock);
         }
 
@@ -1643,9 +1645,8 @@ static bool logfile_write_header(skygw_file_t* file)
 
     if ((header_items != 1) || (line_items != 1))
     {
-        char errbuf[STRERROR_BUFLEN];
         LOG_ERROR("MaxScale Log: Writing header failed due to %d, %s\n",
-                  errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                  errno, mxs_strerror(errno));
         written = false;
     }
 
@@ -1820,15 +1821,13 @@ static bool check_file_and_path(const char* filename, bool* writable)
             {
                 if (file_is_symlink(filename))
                 {
-                    char errbuf[STRERROR_BUFLEN];
                     LOG_ERROR("MaxScale Log: Error, Can't access file pointed to by %s due to %d, %s.\n",
-                              filename, errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                              filename, errno, mxs_strerror(errno));
                 }
                 else
                 {
-                    char errbuf[STRERROR_BUFLEN];
                     LOG_ERROR("MaxScale Log: Error, Can't access %s due to %d, %s.\n",
-                              filename, errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                              filename, errno, mxs_strerror(errno));
                 }
 
                 if (writable)
@@ -1925,9 +1924,8 @@ static bool logfile_init(logfile_t*    logfile,
 
         if (mkdir(dir, S_IRWXU | S_IRWXG) != 0 && (errno != EEXIST))
         {
-            char errbuf[STRERROR_BUFLEN];
             LOG_ERROR("MaxScale Log: Error, creating directory %s failed due to %d, %s.\n",
-                      dir, errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                      dir, errno, mxs_strerror(errno));
 
             succ = false;
             goto return_with_succ;
@@ -2110,9 +2108,8 @@ static bool logfile_write_footer(skygw_file_t* file, const char* suffix)
 
     if ((header_items != 1) || (line_items != 1))
     {
-        char errbuf[STRERROR_BUFLEN];
         LOG_ERROR("MaxScale Log: Writing footer failed due to %d, %s\n",
-                  errno, strerror_r(errno, errbuf, sizeof(errbuf)));
+                  errno, mxs_strerror(errno));
         written = false;
     }
 
@@ -2238,10 +2235,9 @@ static bool thr_flush_file(logmanager_t *lm, filewriter_t *fwr)
             if (err)
             {
                 // TODO: Log this to syslog.
-                char errbuf[STRERROR_BUFLEN];
                 LOG_ERROR("MaxScale Log: Error, writing to the log-file %s failed due to %d, %s. "
                           "Disabling writing to the log.\n",
-                          lf->lf_full_file_name, err, strerror_r(err, errbuf, sizeof(errbuf)));
+                          lf->lf_full_file_name, err, mxs_strerror(err));
 
                 mxs_log_set_maxlog_enabled(false);
             }

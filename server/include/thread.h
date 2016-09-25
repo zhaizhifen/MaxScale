@@ -26,8 +26,16 @@
  * Thread type and thread identifier function macros
  */
 #include <pthread.h>
+
+/** Thread type */
 #define THREAD         pthread_t
-#define thread_self()  pthread_self()
+
+/** Thread identity
+ *
+ * This is never used to access the thread object but only to identify which
+ * thread is active. This information is almost always logged so returning
+ * an integer makes more sense. */
+#define thread_self()  (size_t)pthread_self()
 
 extern THREAD *thread_start(THREAD *thd, void (*entry)(void *), void *arg);
 extern void thread_wait(THREAD thd);

@@ -1,5 +1,5 @@
-#ifndef _POLL_H
-#define _POLL_H
+#ifndef _MXS_POLL_H
+#define _MXS_POLL_H
 /*
  * Copyright (c) 2016 MariaDB Corporation Ab
  *
@@ -12,6 +12,7 @@
  * of this software will be governed by version 2 or later of the General
  * Public License.
  */
+#include <stdint.h>
 #include <dcb.h>
 #include <gwbitmask.h>
 #include <resultset.h>

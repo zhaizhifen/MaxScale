@@ -35,6 +35,7 @@
 #include <session.h>
 #include <statistics.h>
 #include <query_classifier.h>
+#include <thread.h>
 
 #define         PROFILE_POLL    0
 
@@ -92,7 +93,7 @@ static simple_mutex_t epoll_wait_mutex; /*< serializes calls to epoll_wait */
 static int n_waiting = 0;    /*< No. of threads in epoll_wait */
 
 static int process_pollq(int thread_id);
-static void poll_add_event_to_dcb(DCB* dcb, GWBUF* buf, __uint32_t ev);
+static void poll_add_event_to_dcb(DCB* dcb, GWBUF* buf, uint32_t ev);
 static bool poll_dcb_session_check(DCB *dcb, const char *);
 
 DCB *eventq = NULL;
@@ -216,8 +217,7 @@ poll_init()
     }
     if ((epoll_fd = epoll_create(MAX_EVENTS)) == -1)
     {
-        char errbuf[STRERROR_BUFLEN];
-        MXS_ERROR("FATAL: Could not create epoll instance: %s", strerror_r(errno, errbuf, sizeof(errbuf)));
+        MXS_ERROR("FATAL: Could not create epoll instance: %s", mxs_strerror(errno));
         exit(-1);
     }
     memset(&pollStats, 0, sizeof(pollStats));
@@ -321,7 +321,7 @@ poll_add_dcb(DCB *dcb)
     {
         MXS_ERROR("%lu [poll_add_dcb] Error : existing state of dcb %p "
                   "is %s, but this should be impossible, crashing.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
         raise(SIGABRT);
@@ -331,7 +331,7 @@ poll_add_dcb(DCB *dcb)
     {
         MXS_ERROR("%lu [poll_add_dcb] Error : existing state of dcb %p "
                   "is %s, but this is probably an error, not crashing.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
     }
@@ -350,7 +350,7 @@ poll_add_dcb(DCB *dcb)
     if (0 == rc)
     {
         MXS_DEBUG("%lu [poll_add_dcb] Added dcb %p in state %s to poll set.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
     }
@@ -388,7 +388,7 @@ poll_remove_dcb(DCB *dcb)
     {
         MXS_ERROR("%lu [poll_remove_dcb] Error : existing state of dcb %p "
                   "is %s, but this is probably an error, not crashing.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   STRDCBSTATE(dcb->state));
     }
@@ -447,7 +447,7 @@ poll_resolve_error(DCB *dcb, int errornum, bool adding)
         {
             MXS_ERROR("%lu [poll_resolve_error] Error : epoll_ctl could not add, "
                       "already exists for DCB %p.",
-                      pthread_self(),
+                      thread_self(),
                       dcb);
             // Assume another thread added and no serious harm done
             return 0;
@@ -458,7 +458,7 @@ poll_resolve_error(DCB *dcb, int errornum, bool adding)
                       "/proc/sys/fs/epoll/max_user_watches was "
                       "encountered while trying to register (EPOLL_CTL_ADD) a new "
                       "file descriptor on an epoll instance for dcb %p.",
-                      pthread_self(),
+                      thread_self(),
                       dcb);
             /* Failure - assume handled by callers */
             return -1;
@@ -471,7 +471,7 @@ poll_resolve_error(DCB *dcb, int errornum, bool adding)
         {
             MXS_ERROR("%lu [poll_resolve_error] Error : epoll_ctl could not remove, "
                       "not found, for dcb %p.",
-                      pthread_self(),
+                      thread_self(),
                       dcb);
             // Assume another thread removed and no serious harm done
             return 0;
@@ -598,7 +598,7 @@ poll_waitevents(void *arg)
             errno = 0;
             MXS_DEBUG("%lu [poll_waitevents] epoll_wait returned "
                       "%d, errno %d",
-                      pthread_self(),
+                      thread_self(),
                       nfds,
                       eno);
             atomic_add(&n_waiting, -1);
@@ -646,7 +646,7 @@ poll_waitevents(void *arg)
             }
             poll_spins = 0;
             MXS_DEBUG("%lu [poll_waitevents] epoll_wait found %d fds",
-                      pthread_self(),
+                      thread_self(),
                       nfds);
             ts_stats_increment(pollStats.n_pollev, thread_id);
             if (thread_data)
@@ -676,7 +676,7 @@ poll_waitevents(void *arg)
             for (i = 0; i < nfds; i++)
             {
                 DCB *dcb = (DCB *)events[i].data.ptr;
-                __uint32_t ev = events[i].events;
+                uint32_t ev = events[i].events;
 
                 spinlock_acquire(&pollqlock);
                 if (DCB_POLL_BUSY(dcb))
@@ -902,7 +902,7 @@ process_pollq(int thread_id)
     {
         MXS_DEBUG("%lu [poll_waitevents] "
                   "Added fake events %d to ev %d.",
-                  pthread_self(),
+                  thread_self(),
                   dcb_fake_write_ev[dcb->fd],
                   ev);
         ev |= dcb_fake_write_ev[dcb->fd];
@@ -921,7 +921,7 @@ process_pollq(int thread_id)
 
     MXS_DEBUG("%lu [poll_waitevents] event %d dcb %p "
               "role %s",
-              pthread_self(),
+              thread_self(),
               ev,
               dcb,
               STRDCBROLE(dcb->dcb_role));
@@ -946,13 +946,12 @@ process_pollq(int thread_id)
         }
         else
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_DEBUG("%lu [poll_waitevents] "
                       "EPOLLOUT due %d, %s. "
                       "dcb %p, fd %i",
-                      pthread_self(),
+                      thread_self(),
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)),
+                      mxs_strerror(eno),
                       dcb,
                       dcb->fd);
         }
@@ -963,7 +962,7 @@ process_pollq(int thread_id)
         {
             MXS_DEBUG("%lu [poll_waitevents] "
                       "Accept in fd %d",
-                      pthread_self(),
+                      thread_self(),
                       dcb->fd);
             ts_stats_increment(pollStats.n_accept, thread_id);
             dcb_get_ses_log_info(dcb,
@@ -979,7 +978,7 @@ process_pollq(int thread_id)
         {
             MXS_DEBUG("%lu [poll_waitevents] "
                       "Read in dcb %p fd %d",
-                      pthread_self(),
+                      thread_self(),
                       dcb,
                       dcb->fd);
             ts_stats_increment(pollStats.n_read, thread_id);
@@ -1013,24 +1012,22 @@ process_pollq(int thread_id)
         if (eno == 0)
         {
             eno = dcb_fake_write_errno[dcb->fd];
-            char errbuf[STRERROR_BUFLEN];
             MXS_DEBUG("%lu [poll_waitevents] "
                       "Added fake errno %d. "
                       "%s",
-                      pthread_self(),
+                      thread_self(),
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(eno));
         }
         dcb_fake_write_errno[dcb->fd] = 0;
 #endif /* FAKE_CODE */
         if (eno != 0)
         {
-            char errbuf[STRERROR_BUFLEN];
             MXS_DEBUG("%lu [poll_waitevents] "
                       "EPOLLERR due %d, %s.",
-                      pthread_self(),
+                      thread_self(),
                       eno,
-                      strerror_r(eno, errbuf, sizeof(errbuf)));
+                      mxs_strerror(eno));
         }
         ts_stats_increment(pollStats.n_error, thread_id);
         /** Read session id to thread's local storage */
@@ -1048,15 +1045,14 @@ process_pollq(int thread_id)
     {
         int eno = 0;
         eno = gw_getsockerrno(dcb->fd);
-        char errbuf[STRERROR_BUFLEN];
         MXS_DEBUG("%lu [poll_waitevents] "
                   "EPOLLHUP on dcb %p, fd %d. "
                   "Errno %d, %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->fd,
                   eno,
-                  strerror_r(eno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(eno));
         ts_stats_increment(pollStats.n_hup, thread_id);
         spinlock_acquire(&dcb->dcb_initlock);
         if ((dcb->flags & DCBF_HUNG) == 0)
@@ -1084,15 +1080,14 @@ process_pollq(int thread_id)
     {
         int eno = 0;
         eno = gw_getsockerrno(dcb->fd);
-        char errbuf[STRERROR_BUFLEN];
         MXS_DEBUG("%lu [poll_waitevents] "
                   "EPOLLRDHUP on dcb %p, fd %d. "
                   "Errno %d, %s.",
-                  pthread_self(),
+                  thread_self(),
                   dcb,
                   dcb->fd,
                   eno,
-                  strerror_r(eno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(eno));
         ts_stats_increment(pollStats.n_hup, thread_id);
         spinlock_acquire(&dcb->dcb_initlock);
         if ((dcb->flags & DCBF_HUNG) == 0)
@@ -1207,7 +1202,7 @@ poll_dcb_session_check(DCB *dcb, const char *function)
     {
         MXS_ERROR("%lu [%s] The dcb %p that was about to be processed by %s does not "
                   "have a non-null session pointer ",
-                  pthread_self(),
+                  thread_self(),
                   __func__,
                   dcb,
                   function);
@@ -1537,7 +1532,7 @@ poll_loadav(void *data)
 void poll_add_epollin_event_to_dcb(DCB*   dcb,
                                    GWBUF* buf)
 {
-    __uint32_t ev;
+    uint32_t ev;
 
     ev = EPOLLIN;
 
@@ -1547,7 +1542,7 @@ void poll_add_epollin_event_to_dcb(DCB*   dcb,
 
 static void poll_add_event_to_dcb(DCB*       dcb,
                                   GWBUF*     buf,
-                                  __uint32_t ev)
+                                  uint32_t ev)
 {
     /** Add buf to readqueue */
     spinlock_acquire(&dcb->authlock);

@@ -58,6 +58,7 @@
 #include <sys/stat.h>
 #include <modutil.h>
 #include <netinet/tcp.h>
+#include <thread.h>
 
 #include "gw_authenticator.h"
 
@@ -981,7 +982,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
         MXS_DEBUG("%lu [gw_read_client_event] session "
             "creation failed. fd %d, "
             "state = MYSQL_AUTH_NO_SESSION.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
 
         /** Send ERR 1045 to client */
@@ -994,7 +995,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
         MXS_DEBUG("%lu [gw_read_client_event] database "
             "specified was not valid. fd %d, "
             "state = MYSQL_FAILED_AUTH_DB.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
         /** Send error 1049 to client */
         message_len = 25 + MYSQL_DATABASE_MAXLEN;
@@ -1010,7 +1011,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
         MXS_DEBUG("%lu [gw_read_client_event] client is "
             "not SSL capable for SSL listener. fd %d, "
             "state = MYSQL_FAILED_AUTH_SSL.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
 
         /** Send ERR 1045 to client */
@@ -1023,7 +1024,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
         MXS_DEBUG("%lu [gw_read_client_event] unable to "
             "complete SSL authentication. fd %d, "
             "state = MYSQL_AUTH_SSL_INCOMPLETE.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
 
         /** Send ERR 1045 to client */
@@ -1035,7 +1036,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
     case MXS_AUTH_FAILED:
         MXS_DEBUG("%lu [gw_read_client_event] authentication failed. fd %d, "
             "state = MYSQL_FAILED_AUTH.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
         /** Send error 1045 to client */
         fail_str = create_auth_fail_str((char *)((MYSQL_session *)dcb->data)->user,
@@ -1047,7 +1048,7 @@ mysql_client_auth_error_handling(DCB *dcb, int auth_val)
     default:
         MXS_DEBUG("%lu [gw_read_client_event] authentication failed. fd %d, "
             "state unrecognized.",
-            pthread_self(),
+            thread_self(),
             dcb->fd);
         /** Send error 1045 to client */
         fail_str = create_auth_fail_str((char *)((MYSQL_session *)dcb->data)->user,
@@ -1190,7 +1191,7 @@ static void gw_process_one_new_client(DCB *client_dcb)
         dcb_close(client_dcb);
         MXS_ERROR("%lu [gw_MySQLAccept] Failed to create "
               "protocol object for client connection.",
-              pthread_self());
+              thread_self());
         return;
     }
     CHK_PROTOCOL(protocol);
@@ -1229,7 +1230,7 @@ static void gw_process_one_new_client(DCB *client_dcb)
         /** Previous state is recovered in poll_add_dcb. */
         MXS_ERROR("%lu [gw_MySQLAccept] Failed to add dcb %p for "
               "fd %d to epoll set.",
-              pthread_self(),
+              thread_self(),
               client_dcb,
               client_dcb->fd);
         return;
@@ -1238,7 +1239,7 @@ static void gw_process_one_new_client(DCB *client_dcb)
     {
         MXS_DEBUG("%lu [gw_MySQLAccept] Added dcb %p for fd "
               "%d to epoll set.",
-              pthread_self(),
+              thread_self(),
               client_dcb,
               client_dcb->fd);
     }
@@ -1255,7 +1256,7 @@ static int gw_error_client_event(DCB* dcb)
 
     MXS_DEBUG("%lu [gw_error_client_event] Error event handling for DCB %p "
               "in state %s, session %p.",
-              pthread_self(),
+              thread_self(),
               dcb,
               STRDCBSTATE(dcb->state),
               (session != NULL ? session : NULL));
@@ -1293,7 +1294,7 @@ gw_client_close(DCB *dcb)
         }
     }
 #endif
-    MXS_DEBUG("%lu [gw_client_close]", pthread_self());
+    MXS_DEBUG("%lu [gw_client_close]", thread_self());
     mysql_protocol_done(dcb);
     session = dcb->session;
     /**

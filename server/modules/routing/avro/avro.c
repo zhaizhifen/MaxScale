@@ -52,6 +52,7 @@
 #include <binlog_common.h>
 #include <avro/errors.h>
 #include <maxscale/alloc.h>
+#include <thread.h>
 
 #ifndef BINLOG_NAMEFMT
 #define BINLOG_NAMEFMT      "%s.%06d"
@@ -585,7 +586,7 @@ newSession(ROUTER *instance, SESSION *session)
     AVRO_CLIENT *client;
 
     MXS_DEBUG("avrorouter: %lu [newSession] new router session with "
-              "session %p, and inst %p.", pthread_self(), session, inst);
+              "session %p, and inst %p.", thread_self(), session, inst);
 
     if ((client = (AVRO_CLIENT *) MXS_CALLOC(1, sizeof(AVRO_CLIENT))) == NULL)
     {
@@ -1061,7 +1062,6 @@ static bool ensure_dir_ok(const char* path, int mode)
 
     if (path)
     {
-        char err[STRERROR_BUFLEN];
         char resolved[PATH_MAX + 1];
         const char *rp = realpath(path, resolved);
 
@@ -1082,19 +1082,19 @@ static bool ensure_dir_ok(const char* path, int mode)
                 else
                 {
                     MXS_ERROR("Failed to access directory '%s': %d, %s", rp,
-                              errno, strerror_r(errno, err, sizeof(err)));
+                              errno, mxs_strerror(errno));
                 }
             }
             else
             {
                 MXS_ERROR("Failed to create directory '%s': %d, %s", rp,
-                          errno, strerror_r(errno, err, sizeof(err)));
+                          errno, mxs_strerror(errno));
             }
         }
         else
         {
             MXS_ERROR("Failed to resolve real path name for '%s': %d, %s", path,
-                      errno, strerror_r(errno, err, sizeof(err)));
+                      errno, mxs_strerror(errno));
         }
     }
 

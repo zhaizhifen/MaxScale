@@ -143,8 +143,7 @@ bool gw_daemonize(void)
 
     if (pid < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
-        fprintf(stderr, "fork() error %s\n", strerror_r(errno, errbuf, sizeof(errbuf)));
+        fprintf(stderr, "fork() error %s\n", mxs_strerror(errno));
         exit(1);
     }
 
@@ -156,8 +155,7 @@ bool gw_daemonize(void)
 
     if (setsid() < 0)
     {
-        char errbuf[STRERROR_BUFLEN];
-        fprintf(stderr, "setsid() error %s\n", strerror_r(errno, errbuf, sizeof(errbuf)));
+        fprintf(stderr, "setsid() error %s\n", mxs_strerror(errno));
         exit(1);
     }
     return false;

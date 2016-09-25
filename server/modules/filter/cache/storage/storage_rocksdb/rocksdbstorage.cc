@@ -68,11 +68,10 @@ bool RocksDBStorage::Initialize()
     else if (errno != EEXIST)
     {
         initialized = false;
-        char errbuf[STRERROR_BUFLEN];
 
         MXS_ERROR("Failed to create storage directory %s: %s",
                   u_storageDirectory.c_str(),
-                  strerror_r(errno, errbuf, sizeof(errbuf)));
+                  mxs_strerror(errno));
     }
     else
     {
