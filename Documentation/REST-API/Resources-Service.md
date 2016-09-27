@@ -40,6 +40,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ### Get all services
 
 Get all services.
@@ -91,6 +95,11 @@ Status: 200 OK
 ]
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+- `range`
+
 ### Get service listeners
 
 Get the listeners of a service. The _:name_ in the URI must be a valid service
@@ -125,6 +134,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Update a service
 
@@ -237,6 +251,10 @@ Status: 200 OK
     "/sessions/2"
 ]
 ```
+
+#### Supported Request Parameter
+
+- `range`
 
 ### Close all sessions for a service
 

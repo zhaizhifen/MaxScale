@@ -30,6 +30,11 @@ Status: 200 OK
     }
 ]
 
+#### Supported Request Parameter
+
+- `fields`
+- `range`
+
 ### Create a user
 
 Create a new administrative user.

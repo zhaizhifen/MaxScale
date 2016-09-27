@@ -39,6 +39,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ### Get all filters
 
 Get all filters.
@@ -87,6 +91,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Update a filter
 

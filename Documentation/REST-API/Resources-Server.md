@@ -37,6 +37,10 @@ Status: 200 OK
 **Note**: The _parameters_ field contains all custom parameters for
   servers, including the server weighting parameters.
 
+#### Supported Request Parameter
+
+- `fields`
+
 ### Get all servers
 
 ```
@@ -78,6 +82,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Update a server
 
@@ -176,6 +185,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Close all connections to a server
 

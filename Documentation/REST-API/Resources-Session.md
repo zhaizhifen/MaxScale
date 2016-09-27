@@ -30,6 +30,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ### Get all sessions
 
 Get all sessions.
@@ -64,6 +68,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Get all connections created by a session
 
@@ -107,6 +116,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Close a session
 

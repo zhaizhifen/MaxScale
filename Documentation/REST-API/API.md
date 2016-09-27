@@ -13,6 +13,7 @@ This document describes the version 1 of the MaxScale REST API.
   - [4xx Client Error](#4xx-client-error)
   - [5xx Server Error](#5xx-server-error)
 - [Resources](#resources)
+- [Common Request Parameter](#common-request-parameters)
 
 ## HTTP Headers
 
@@ -419,3 +420,34 @@ The MaxScale REST API provides the following resources.
 - [/monitors](Resources-Monitor.md)
 - [/sessions](Resources-Session.md)
 - [/users](Resources-User.md)
+
+## Common Request Parameters
+
+Most of the resources that support GET also support the following
+parameters. See the resource documentation for a list of supported request
+parameters.
+
+- `fields`
+
+  - A list of fields to return.
+
+    This allows the returned object to be filtered so that only needed
+    parts are returned. The value of this parameter is a comma separated
+    list of fields to return.
+
+    For example, the parameter `?fields=id,name` would return object which
+    would only contain the _id_ and _name_ fields.
+
+- `range`
+
+  - Return a subset of the object array.
+
+    The value of this parameter is the range of objects to return given as
+    a inclusive range separated by a hyphen. If the size of the array is
+    less than the end of the range, only the objects between the requested
+    start of the range and the actual end of the array are returned. This
+    means that
+
+    For example, the parameter `?range=10-20` would return objects 10
+    through 20 from the object array if the actual size of the original
+    array is greater than or equal to 20.

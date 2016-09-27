@@ -35,6 +35,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ## Get thread information
 
 Get detailed information and statistics about the threads.
@@ -78,6 +82,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ## Get logging information
 
 Get information about the current state of logging, enabled log files and the
@@ -114,6 +122,10 @@ Status: 200 OK
     "last_flushed": "Wed, 31 Aug 2016 23:29:26 +0300"
 }
 ```
+
+#### Supported Request Parameter
+
+- `fields`
 
 ## Flush and rotate log files
 
@@ -152,6 +164,11 @@ Status: 200 OK
     }
 }
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+
 ## Get loaded modules
 
 Retrieve information about all loaded modules. This includes version, API and
@@ -190,5 +207,10 @@ Status: 200 OK
     }
 }
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 TODO: Add epoll statistics and rest of the supported methods.

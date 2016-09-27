@@ -35,6 +35,10 @@ Status: 200 OK
 }
 ```
 
+#### Supported Request Parameter
+
+- `fields`
+
 ### Get all monitors
 
 Get all monitors.
@@ -79,6 +83,11 @@ Status: 200 OK
     }
 ]
 ```
+
+#### Supported Request Parameter
+
+- `fields`
+- `range`
 
 ### Stop a monitor
 
