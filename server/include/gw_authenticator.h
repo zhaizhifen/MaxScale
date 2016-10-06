@@ -42,14 +42,28 @@ struct servlistener;
  * @verbatim
  * The operations that can be performed on the descriptor
  *
- *      create          Create a data structure unique to this DCB, stored in dcb->authenticator_data
+ *      initialize      Initialize the authenticator instance. The return value
+ *                      of this function will be given as the first argument to
+ *                      the other entry points.
+ *
+ *      create          Create a data structure unique to this DCB, stored in
+ *                      dcb->authenticator_data
+ *
  *      extract         Extract the data from a buffer and place in a structure
  *                      shared at the session level, stored in dcb->data
- *      connectssl      Determine whether the connection can support SSL
+ *
+ *      connectSSL      Determine whether the connection can support SSL
+ *
  *      authenticate    Carry out the authentication
- *      free            Free extracted data
- *      destroy         Destroy the unique DCB data
- *      loadusers       Load or update authenticator user data
+ *
+ *      free            Free extracted data. This is only called for the client
+ *                      side authenticators so backend authenticators should not
+ *                      implement it.
+ *
+ *      destroy         Destroy the unique DCB data returned by the `create`
+ *                      entry point.
+ *
+ *      loadUsers       Load or update authenticator user data
  * @endverbatim
  *
  * This forms the "module object" for authenticator modules within the gateway.
@@ -58,13 +72,14 @@ struct servlistener;
  */
 typedef struct gw_authenticator
 {
-    void *(*create)();
-    int (*extract)(struct dcb *, GWBUF *);
-    bool (*connectssl)(struct dcb *);
-    int (*authenticate)(struct dcb *);
-    void (*free)(struct dcb *);
+    void *(*initialize)(struct servlistener *listener, char **options);
+    void *(*create)(void* instance);
+    int (*extract)(void *instance, struct dcb *, GWBUF *);
+    bool (*connectSSL)(void *instance, struct dcb *);
+    int (*authenticate)(void *instance, struct dcb *);
+    void (*free)(void *instance, struct dcb *);
     void (*destroy)(void *);
-    int (*loadusers)(struct servlistener *);
+    int (*loadUsers)(void *instance, struct servlistener *);
 } GWAUTHENTICATOR;
 
 /** Return values for extract and authenticate entry points */
@@ -109,7 +124,6 @@ typedef enum
  * that define how these numbers should change.
  */
 #define GWAUTHENTICATOR_VERSION      {1, 1, 0}
-
 
 #endif /* GW_AUTHENTICATOR_H */
 

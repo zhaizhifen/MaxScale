@@ -49,16 +49,17 @@ MODULE_INFO info =
 
 static char *version_str = "V1.1.0";
 
-static int http_auth_set_protocol_data(DCB *dcb, GWBUF *buf);
-static bool http_auth_is_client_ssl_capable(DCB *dcb);
-static int http_auth_authenticate(DCB *dcb);
-static void http_auth_free_client_data(DCB *dcb);
+static int http_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf);
+static bool http_auth_is_client_ssl_capable(void *instance, DCB *dcb);
+static int http_auth_authenticate(void *instance, DCB *dcb);
+static void http_auth_free_client_data(void *instance, DCB *dcb);
 
 /*
  * The "module object" for mysql client authenticator module.
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                            /* No initialize entry point */
     NULL,                            /* No create entry point */
     http_auth_set_protocol_data,     /* Extract data into structure   */
     http_auth_is_client_ssl_capable, /* Check if client supports SSL  */
@@ -119,7 +120,7 @@ GWAUTHENTICATOR* GetModuleObject()
  * @return Authentication status - always 0 to denote success
  */
 static int
-http_auth_authenticate(DCB *dcb)
+http_auth_authenticate(void *instance, DCB *dcb)
 {
     int rval = 1;
     HTTP_AUTH *ses = (HTTP_AUTH*)dcb->data;
@@ -148,7 +149,7 @@ http_auth_authenticate(DCB *dcb)
  * @return Authentication status - 0 for success, 1 for failure
  */
 static int
-http_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
+http_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf)
 {
     int rval = 1;
     char* value = (char*)GWBUF_DATA(buf);
@@ -204,7 +205,7 @@ http_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
  * @return Boolean indicating whether client is SSL capable - false
  */
 static bool
-http_auth_is_client_ssl_capable(DCB *dcb)
+http_auth_is_client_ssl_capable(void *instance, DCB *dcb)
 {
     return false;
 }
@@ -218,7 +219,7 @@ http_auth_is_client_ssl_capable(DCB *dcb)
  * @param dcb Request handler DCB connected to the client
  */
 static void
-http_auth_free_client_data(DCB *dcb)
+http_auth_free_client_data(void *instance, DCB *dcb)
 {
     HTTP_AUTH *ses = (HTTP_AUTH*)dcb->data;
     MXS_FREE(ses->user);

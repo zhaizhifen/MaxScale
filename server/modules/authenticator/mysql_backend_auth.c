@@ -52,7 +52,7 @@ typedef struct mysql_backend_auth
  * @brief Allocate a new mysql_backend_auth object
  * @return Allocated object or NULL if memory allocation failed
  */
-void* auth_backend_create()
+void* auth_backend_create(void *instance)
 {
     mysql_backend_auth_t* mba = MXS_MALLOC(sizeof(*mba));
 
@@ -84,7 +84,7 @@ void auth_backend_destroy(void *data)
  * @see gw_quthenticator.h
  * @see https://dev.mysql.com/doc/internals/en/client-server-protocol.html
  */
-static int auth_backend_extract(DCB *dcb, GWBUF *buf)
+static int auth_backend_extract(void *instance, DCB *dcb, GWBUF *buf)
 {
     int rval = MXS_AUTH_FAILED;
     mysql_backend_auth_t *mba = (mysql_backend_auth_t*)dcb->authenticator_data;
@@ -119,7 +119,7 @@ static int auth_backend_extract(DCB *dcb, GWBUF *buf)
  * @return Authentication status
  * @see gw_authenticator.h
  */
-static int auth_backend_authenticate(DCB *dcb)
+static int auth_backend_authenticate(void *instance, DCB *dcb)
 {
     int rval = MXS_AUTH_FAILED;
     mysql_backend_auth_t *mba = (mysql_backend_auth_t*)dcb->authenticator_data;
@@ -143,7 +143,7 @@ static int auth_backend_authenticate(DCB *dcb)
  * @param dcb Request handler DCB connected to the client
  * @return Boolean indicating whether client is SSL capable
  */
-static bool auth_backend_ssl(DCB *dcb)
+static bool auth_backend_ssl(void *instance, DCB *dcb)
 {
     return dcb->server->server_ssl != NULL;
 }
@@ -151,7 +151,7 @@ static bool auth_backend_ssl(DCB *dcb)
 /**
  * @brief Dummy function for the loadusers entry point
  */
-static int auth_backend_load_users(SERV_LISTENER *port)
+static int auth_backend_load_users(void *instance, SERV_LISTENER *port)
 {
     return MXS_AUTH_LOADUSERS_OK;
 }
@@ -176,6 +176,7 @@ static char *version_str = "V1.0.0";
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                      /* No initialize entry point */
     auth_backend_create,       /* Create authenticator */
     auth_backend_extract,      /* Extract data into structure   */
     auth_backend_ssl,          /* Check if client supports SSL  */

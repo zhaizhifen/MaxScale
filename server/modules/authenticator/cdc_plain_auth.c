@@ -48,13 +48,13 @@ MODULE_INFO info =
 
 static char *version_str = "V1.1.0";
 
-static int  cdc_auth_set_protocol_data(DCB *dcb, GWBUF *buf);
-static bool cdc_auth_is_client_ssl_capable(DCB *dcb);
-static int  cdc_auth_authenticate(DCB *dcb);
-static void cdc_auth_free_client_data(DCB *dcb);
+static int  cdc_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf);
+static bool cdc_auth_is_client_ssl_capable(void *instance, DCB *dcb);
+static int  cdc_auth_authenticate(void *instance, DCB *dcb);
+static void cdc_auth_free_client_data(void *instance, DCB *dcb);
 
 static int cdc_set_service_user(SERV_LISTENER *listener);
-static int cdc_replace_users(SERV_LISTENER *listener);
+static int cdc_replace_users(void *instance, SERV_LISTENER *listener);
 
 extern char  *gw_bin2hex(char *out, const uint8_t *in, unsigned int len);
 extern void gw_sha1_str(const uint8_t *in, int in_len, uint8_t *out);
@@ -67,6 +67,7 @@ extern char *decryptPassword(char *crypt);
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                           /* No initialize entry point */
     NULL,                           /* No create entry point */
     cdc_auth_set_protocol_data,     /* Extract data into structure   */
     cdc_auth_is_client_ssl_capable, /* Check if client supports SSL  */
@@ -164,7 +165,7 @@ static int cdc_auth_check(DCB *dcb, CDC_protocol *protocol, char *username, uint
  * @note Authentication status codes are defined in cdc.h
  */
 static int
-cdc_auth_authenticate(DCB *dcb)
+cdc_auth_authenticate(void *instance, DCB *dcb)
 {
     CDC_protocol *protocol = DCB_PROTOCOL(dcb, CDC_protocol);
     CDC_session *client_data = (CDC_session *)dcb->data;
@@ -182,7 +183,7 @@ cdc_auth_authenticate(DCB *dcb)
         auth_ret = cdc_auth_check(dcb, protocol, client_data->user, client_data->auth_data, client_data->flags);
 
         /* On failed authentication try to reload users and authenticate again */
-        if (CDC_STATE_AUTH_OK != auth_ret && cdc_replace_users(dcb->listener) == MXS_AUTH_LOADUSERS_OK)
+        if (CDC_STATE_AUTH_OK != auth_ret && cdc_replace_users(instance, dcb->listener) == MXS_AUTH_LOADUSERS_OK)
         {
             auth_ret = cdc_auth_check(dcb, protocol, client_data->user, client_data->auth_data, client_data->flags);
         }
@@ -218,7 +219,7 @@ cdc_auth_authenticate(DCB *dcb)
  * @note Authentication status codes are defined in cdc.h
  */
 static int
-cdc_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
+cdc_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf)
 {
     uint8_t *client_auth_packet = GWBUF_DATA(buf);
     CDC_protocol *protocol = NULL;
@@ -323,7 +324,7 @@ cdc_auth_set_client_data(CDC_session *client_data,
  * @return Boolean indicating whether client is SSL capable
  */
 static bool
-cdc_auth_is_client_ssl_capable(DCB *dcb)
+cdc_auth_is_client_ssl_capable(void *instance, DCB *dcb)
 {
     return false;
 }
@@ -341,7 +342,7 @@ cdc_auth_is_client_ssl_capable(DCB *dcb)
  * @param dcb Request handler DCB connected to the client
  */
 static void
-cdc_auth_free_client_data(DCB *dcb)
+cdc_auth_free_client_data(void *instance, DCB *dcb)
 {
     MXS_FREE(dcb->data);
 }
@@ -488,7 +489,7 @@ cdc_read_users(USERS *users, char *usersfile)
  *
  * @param service The current service
  */
-int cdc_replace_users(SERV_LISTENER *listener)
+int cdc_replace_users(void *instance, SERV_LISTENER *listener)
 {
     int rc = MXS_AUTH_LOADUSERS_ERROR;
     USERS *newusers = users_alloc();

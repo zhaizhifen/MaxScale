@@ -103,10 +103,10 @@ static bool authenticate_unix_socket(MAXSCALED *protocol, DCB *dcb)
             username = gwbuf_alloc(strlen(protocol->username) + 1);
 
             strcpy(GWBUF_DATA(username), protocol->username);
-
+            void *inst = dcb->listener->instance;
             /* Authenticate the user */
-            if (dcb->authfunc.extract(dcb, username) == 0 &&
-                dcb->authfunc.authenticate(dcb) == 0)
+            if (dcb->authfunc.extract(inst, dcb, username) == 0 &&
+                dcb->authfunc.authenticate(inst, dcb) == 0)
             {
                 dcb_printf(dcb, MAXADMIN_AUTH_SUCCESS_REPLY);
                 protocol->state = MAXSCALED_STATE_DATA;

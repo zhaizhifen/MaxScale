@@ -147,6 +147,7 @@ static char *service_params[] =
 
 static char *listener_params[] =
 {
+    "authenticator_options",
     "type",
     "service",
     "protocol",
@@ -2810,6 +2811,7 @@ int create_new_listener(CONFIG_CONTEXT *obj, bool startnow)
     char *protocol = config_get_value(obj->parameters, "protocol");
     char *socket = config_get_value(obj->parameters, "socket");
     char *authenticator = config_get_value(obj->parameters, "authenticator");
+    char *authenticator_options = config_get_value(obj->parameters, "authenticator_options");
 
     if (service_name && protocol && (socket || port))
     {
@@ -2828,7 +2830,7 @@ int create_new_listener(CONFIG_CONTEXT *obj, bool startnow)
                 else
                 {
                     serviceAddProtocol(service, obj->object, protocol, socket, 0,
-                                       authenticator, ssl_info);
+                                       authenticator, authenticator_options, ssl_info);
                     if (startnow)
                     {
                         serviceStartProtocol(service, protocol, 0);
@@ -2848,8 +2850,8 @@ int create_new_listener(CONFIG_CONTEXT *obj, bool startnow)
                 }
                 else
                 {
-                    serviceAddProtocol(service, obj->object, protocol, address,
-                                       atoi(port), authenticator, ssl_info);
+                    serviceAddProtocol(service, obj->object, protocol, address, atoi(port),
+                                       authenticator, authenticator_options, ssl_info);
                     if (startnow)
                     {
                         serviceStartProtocol(service, protocol, atoi(port));

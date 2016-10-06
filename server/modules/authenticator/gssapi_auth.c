@@ -17,6 +17,58 @@
 #include <mysql_client_server_protocol.h>
 #include "gssapi_auth.h"
 
+typedef struct gssapi_instance
+{
+    char *principal_name;
+}GSSAPI_INSTANCE;
+
+/**
+ * @brief Initialize the GSSAPI authenticator
+ *
+ * This function processes the service principal name that is given to the client.
+ *
+ * @param listener Listener port
+ * @param options Listener options
+ * @return Authenticator instance
+ */
+void* gssapi_auth_init(SERV_LISTENER *listener, char **options)
+{
+    GSSAPI_INSTANCE *instance = MXS_MALLOC(sizeof(GSSAPI_INSTANCE));
+
+    if (instance)
+    {
+        instance->principal_name = NULL;
+
+        for (int i = 0; options[i]; i++)
+        {
+            if (strstr(options[i], "principal_name"))
+            {
+                char *ptr = strchr(options[i], '=');
+                if (ptr)
+                {
+                    ptr++;
+                    instance->principal_name = MXS_STRDUP_A(ptr);
+                }
+            }
+            else
+            {
+                MXS_ERROR("Unknown option: %s", options[i]);
+                MXS_FREE(instance->principal_name);
+                MXS_FREE(instance);
+                return NULL;
+            }
+        }
+
+        if (instance->principal_name == NULL)
+        {
+            instance->principal_name = MXS_STRDUP_A(default_princ_name);
+            MXS_NOTICE("Using default principal name: %s", instance->principal_name);
+        }
+    }
+
+    return instance;
+}
+
 /**
  * @brief Create a AuthSwitchRequest packet
  *
@@ -29,10 +81,10 @@
  * @see https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::AuthSwitchRequest
  * @see https://web.mit.edu/kerberos/krb5-1.5/krb5-1.5.4/doc/krb5-user/What-is-a-Kerberos-Principal_003f.html
  */
-static GWBUF* create_auth_change_packet()
+static GWBUF* create_auth_change_packet(GSSAPI_INSTANCE *instance)
 {
-
-    size_t plen = sizeof(auth_plugin_name) + 1 + sizeof(default_princ_name) - 1;
+    size_t principal_name_len = strlen(instance->principal_name);
+    size_t plen = sizeof(auth_plugin_name) + 1 + principal_name_len;
     GWBUF *buffer = gwbuf_alloc(plen + MYSQL_HEADER_LEN);
 
     if (buffer)
@@ -44,7 +96,7 @@ static GWBUF* create_auth_change_packet()
         *data++ = 0xfe; // AuthSwitchRequest command
         memcpy(data, auth_plugin_name, sizeof(auth_plugin_name)); // Plugin name
         data += sizeof(auth_plugin_name);
-        memcpy(data, default_princ_name, sizeof(default_princ_name) - 1); // Plugin data
+        memcpy(data, instance->principal_name, principal_name_len); // Plugin data
     }
 
     return buffer;
@@ -119,7 +171,7 @@ static void copy_client_information(DCB *dcb, GWBUF *buffer)
  * @return MXS_AUTH_SUCCEEDED if authentication can continue, MXS_AUTH_FAILED if
  * authentication failed
  */
-static int gssapi_auth_extract(DCB *dcb, GWBUF *read_buffer)
+static int gssapi_auth_extract(void *instance, DCB *dcb, GWBUF *read_buffer)
 {
     int rval = MXS_AUTH_FAILED;
     gssapi_auth_t *auth = (gssapi_auth_t*)dcb->authenticator_data;
@@ -151,7 +203,7 @@ static int gssapi_auth_extract(DCB *dcb, GWBUF *read_buffer)
  * @param dcb Client DCB
  * @return True if client supports SSL
  */
-bool gssapi_auth_connectssl(DCB *dcb)
+bool gssapi_auth_connectssl(void *instance, DCB *dcb)
 {
     MySQLProtocol *protocol = (MySQLProtocol*)dcb->protocol;
     return protocol->client_capabilities & GW_MYSQL_CAPABILITIES_SSL;
@@ -228,7 +280,7 @@ static bool validate_gssapi_token(uint8_t* token, size_t len)
  * if authentication was successfully completed or MXS_AUTH_FAILED if authentication
  * has failed.
  */
-int gssapi_auth_authenticate(DCB *dcb)
+int gssapi_auth_authenticate(void *instance, DCB *dcb)
 {
     int rval = MXS_AUTH_FAILED;
     gssapi_auth_t *auth = (gssapi_auth_t*)dcb->authenticator_data;
@@ -238,7 +290,7 @@ int gssapi_auth_authenticate(DCB *dcb)
         /** We need to send the authentication switch packet to change the
          * authentication to something other than the 'mysql_native_password'
          * method */
-        GWBUF *buffer = create_auth_change_packet();
+        GWBUF *buffer = create_auth_change_packet((GSSAPI_INSTANCE*)instance);
 
         if (buffer && dcb->func.write(dcb, buffer))
         {
@@ -268,7 +320,7 @@ int gssapi_auth_authenticate(DCB *dcb)
  *
  * @param dcb DCB to free
  */
-void gssapi_auth_free_data(DCB *dcb)
+void gssapi_auth_free_data(void *instance, DCB *dcb)
 {
     if (dcb->data)
     {
@@ -285,7 +337,7 @@ void gssapi_auth_free_data(DCB *dcb)
  * @param listener Listener definition
  * @return Always MXS_AUTH_LOADUSERS_OK
  */
-int gssapi_auth_load_users(SERV_LISTENER *listener)
+int gssapi_auth_load_users(void *instance, SERV_LISTENER *listener)
 {
     return MXS_AUTH_LOADUSERS_OK;
 }
@@ -295,6 +347,7 @@ int gssapi_auth_load_users(SERV_LISTENER *listener)
  */
 static GWAUTHENTICATOR MyObject =
 {
+    gssapi_auth_init,                /* Initialize authenticator */
     gssapi_auth_alloc,               /* Allocate authenticator data */
     gssapi_auth_extract,             /* Extract data into structure   */
     gssapi_auth_connectssl,          /* Check if client supports SSL  */

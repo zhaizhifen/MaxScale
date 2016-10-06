@@ -36,6 +36,7 @@
 #include <log_manager.h>
 #include <maxscale/alloc.h>
 #include <users.h>
+#include <modutil.h>
 
 static RSA *rsa_512 = NULL;
 static RSA *rsa_1024 = NULL;
@@ -54,7 +55,7 @@ static RSA *tmp_rsa_callback(SSL *s, int is_export, int keylength);
  */
 SERV_LISTENER *
 listener_alloc(struct service* service, char* name, char *protocol, char *address,
-               unsigned short port, char *authenticator, SSL_LISTENER *ssl)
+               unsigned short port, char *authenticator, char* options, SSL_LISTENER *ssl)
 {
     if (address)
     {
@@ -73,6 +74,13 @@ listener_alloc(struct service* service, char* name, char *protocol, char *addres
             MXS_FREE(address);
             return NULL;
         }
+    }
+
+    if (options && (options = MXS_STRDUP(options)) == NULL)
+    {
+        MXS_FREE(address);
+        MXS_FREE(authenticator);
+        return NULL;
     }
 
     protocol = MXS_STRDUP(protocol);
@@ -98,6 +106,8 @@ listener_alloc(struct service* service, char* name, char *protocol, char *addres
     proto->users = NULL;
     proto->resources = NULL;
     proto->next = NULL;
+    proto->instance = NULL;
+    proto->options = options;
     spinlock_init(&proto->lock);
 
     return proto;
@@ -352,4 +362,42 @@ tmp_rsa_callback(SSL *s, int is_export, int keylength)
         }
     }
     return(rsa_tmp);
+}
+
+/**
+ * @brief Initialize the authenticator module of a listener
+ * @param listener Listener to initialize
+ */
+void listener_init_authenticator(SERV_LISTENER *listener)
+{
+    if (listener->listener->authfunc.initialize)
+    {
+        char *optarray[LISTENER_MAX_OPTIONS];
+        size_t optlen = listener->options ? strlen(listener->options) : 0;
+        char optcopy[optlen + 1];
+        int optcount = 0;
+
+        if (listener->options)
+        {
+            strcpy(optcopy, listener->options);
+            char *opt = optcopy;
+
+            while (opt)
+            {
+                char *end = strnchr_esc(opt, ',', sizeof(optcopy) - (opt - optcopy));
+
+                if (end)
+                {
+                    *end++ = '\0';
+                }
+
+                optarray[optcount++] = opt;
+                opt = end;
+            }
+        }
+
+        optarray[optcount] = NULL;
+
+        listener->instance = listener->listener->authfunc.initialize(listener, optarray);
+    }
 }

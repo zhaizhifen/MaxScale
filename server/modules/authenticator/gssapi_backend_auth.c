@@ -116,7 +116,7 @@ bool extract_principal_name(DCB *dcb, GWBUF *buffer)
     return rval;
 }
 
-static int gssapi_backend_auth_extract(DCB *dcb, GWBUF *buffer)
+static int gssapi_backend_auth_extract(void *instance, DCB *dcb, GWBUF *buffer)
 {
     int rval = MXS_AUTH_FAILED;
     gssapi_auth_t *data = (gssapi_auth_t*)dcb->authenticator_data;
@@ -138,12 +138,12 @@ static int gssapi_backend_auth_extract(DCB *dcb, GWBUF *buffer)
     return rval;
 }
 
-static bool gssapi_backend_auth_connectssl(DCB *dcb)
+static bool gssapi_backend_auth_connectssl(void *instance, DCB *dcb)
 {
     return dcb->server->server_ssl != NULL;
 }
 
-static int gssapi_backend_auth_authenticate(DCB *dcb)
+static int gssapi_backend_auth_authenticate(void *instance, DCB *dcb)
 {
     int rval = MXS_AUTH_FAILED;
     gssapi_auth_t *auth_data = (gssapi_auth_t*)dcb->authenticator_data;
@@ -170,6 +170,7 @@ static int gssapi_backend_auth_authenticate(DCB *dcb)
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                               /* TODO: implement initialize entry point */
     gssapi_auth_alloc,                  /* Allocate authenticator data */
     gssapi_backend_auth_extract,        /* Extract data into structure   */
     gssapi_backend_auth_connectssl,     /* Check if client supports SSL  */

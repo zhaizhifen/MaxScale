@@ -220,7 +220,7 @@ dcb_usersPrint(DCB *dcb, USERS *users)
  * @param port Listener configuration
  * @return Always AUTH_LOADUSERS_OK
  */
-int users_default_loadusers(SERV_LISTENER *port)
+int users_default_loadusers(void *instance, SERV_LISTENER *port)
 {
     users_free(port->users);
     port->users = users_alloc();

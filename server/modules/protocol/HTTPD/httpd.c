@@ -253,8 +253,9 @@ static int httpd_read_event(DCB* dcb)
                 {
                     /** The freeing entry point is called automatically when
                      * the client DCB is closed */
-                    dcb->authfunc.extract(dcb, auth_data);
-                    auth_ok = dcb->authfunc.authenticate(dcb) == 0;
+                    void *inst = dcb->listener->instance;
+                    dcb->authfunc.extract(inst, dcb, auth_data);
+                    auth_ok = dcb->authfunc.authenticate(inst, dcb) == 0;
                     gwbuf_free(auth_data);
                 }
             }

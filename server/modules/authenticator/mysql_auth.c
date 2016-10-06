@@ -51,17 +51,18 @@ MODULE_INFO info =
 
 static char *version_str = "V1.1.0";
 
-static int mysql_auth_set_protocol_data(DCB *dcb, GWBUF *buf);
-static bool mysql_auth_is_client_ssl_capable(DCB *dcb);
-static int mysql_auth_authenticate(DCB *dcb);
-static void mysql_auth_free_client_data(DCB *dcb);
-static int mysql_auth_load_users(SERV_LISTENER *port);
+static int mysql_auth_set_protocol_data(void*, DCB *dcb, GWBUF *buf);
+static bool mysql_auth_is_client_ssl_capable(void*, DCB *dcb);
+static int mysql_auth_authenticate(void*, DCB *dcb);
+static void mysql_auth_free_client_data(void*, DCB *dcb);
+static int mysql_auth_load_users(void*, SERV_LISTENER *port);
 
 /*
  * The "module object" for mysql client authenticator module.
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                             /* No initialize entry point */
     NULL,                             /* No create entry point */
     mysql_auth_set_protocol_data,     /* Extract data into structure   */
     mysql_auth_is_client_ssl_capable, /* Check if client supports SSL  */
@@ -135,7 +136,7 @@ GWAUTHENTICATOR* GetModuleObject()
  * @note Authentication status codes are defined in mysql_client_server_protocol.h
  */
 static int
-mysql_auth_authenticate(DCB *dcb)
+mysql_auth_authenticate(void* instance, DCB *dcb)
 {
     MySQLProtocol *protocol = DCB_PROTOCOL(dcb, MySQLProtocol);
     MYSQL_session *client_data = (MYSQL_session *)dcb->data;
@@ -148,7 +149,7 @@ mysql_auth_authenticate(DCB *dcb)
      */
 
     bool health_before = ssl_is_connection_healthy(dcb);
-    int ssl_ret = ssl_authenticate_client(dcb, dcb->authfunc.connectssl(dcb));
+    int ssl_ret = ssl_authenticate_client(dcb, dcb->authfunc.connectSSL(instance, dcb));
     bool health_after = ssl_is_connection_healthy(dcb);
 
     if (0 != ssl_ret)
@@ -237,7 +238,7 @@ mysql_auth_authenticate(DCB *dcb)
  * @see https://dev.mysql.com/doc/internals/en/client-server-protocol.html
  */
 static int
-mysql_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
+mysql_auth_set_protocol_data(void* instance, DCB *dcb, GWBUF *buf)
 {
     uint8_t *client_auth_packet = GWBUF_DATA(buf);
     MySQLProtocol *protocol = NULL;
@@ -400,7 +401,7 @@ mysql_auth_set_client_data(
  * @return Boolean indicating whether client is SSL capable
  */
 static bool
-mysql_auth_is_client_ssl_capable(DCB *dcb)
+mysql_auth_is_client_ssl_capable(void* instance, DCB *dcb)
 {
     MySQLProtocol *protocol;
 
@@ -804,7 +805,7 @@ static int combined_auth_check(
  * @param dcb Request handler DCB connected to the client
  */
 static void
-mysql_auth_free_client_data(DCB *dcb)
+mysql_auth_free_client_data(void* instance, DCB *dcb)
 {
     MXS_FREE(dcb->data);
 }
@@ -817,7 +818,7 @@ mysql_auth_free_client_data(DCB *dcb)
  * @param port Listener definition
  * @return AUTH_LOADUSERS_OK on success, AUTH_LOADUSERS_ERROR on error
  */
-static int mysql_auth_load_users(SERV_LISTENER *port)
+static int mysql_auth_load_users(void* instance, SERV_LISTENER *port)
 {
     int rc = MXS_AUTH_LOADUSERS_OK;
     SERVICE *service = port->listener->service;

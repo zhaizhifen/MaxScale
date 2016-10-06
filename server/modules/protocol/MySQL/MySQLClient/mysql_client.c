@@ -495,11 +495,12 @@ gw_read_do_authentication(DCB *dcb, GWBUF *read_buffer, int nbytes_read)
      * data extraction succeeds, then a call is made to the actual
      * authenticate function to carry out the user checks.
      */
-    int auth_val = dcb->authfunc.extract(dcb, read_buffer);
+    void *inst = dcb->listener->instance;
+    int auth_val = dcb->authfunc.extract(inst, dcb, read_buffer);
 
     if (MXS_AUTH_SUCCEEDED == auth_val)
     {
-        auth_val = dcb->authfunc.authenticate(dcb);
+        auth_val = dcb->authfunc.authenticate(inst, dcb);
     }
 
     MySQLProtocol *protocol = (MySQLProtocol *)dcb->protocol;

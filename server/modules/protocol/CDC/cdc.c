@@ -140,15 +140,17 @@ cdc_read_event(DCB* dcb)
 
     if ((n = dcb_read(dcb, &head, 0))  > 0)
     {
+        void *inst = dcb->listener->instance;
+
         switch (protocol->state)
         {
             case CDC_STATE_WAIT_FOR_AUTH:
                 if (CDC_STATE_AUTH_OK == (
                         /* Fill CDC_session from incoming packet */
-                        auth_val = dcb->authfunc.extract(dcb, head)))
+                        auth_val = dcb->authfunc.extract(inst, dcb, head)))
                 {
                     /* Call protocol authentication */
-                    auth_val = dcb->authfunc.authenticate(dcb);
+                    auth_val = dcb->authfunc.authenticate(inst, dcb);
                 }
 
                 /* Discard input buffer */

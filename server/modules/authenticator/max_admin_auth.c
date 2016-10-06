@@ -49,16 +49,17 @@ MODULE_INFO info =
 
 static char *version_str = "V2.1.0";
 
-static int max_admin_auth_set_protocol_data(DCB *dcb, GWBUF *buf);
-static bool max_admin_auth_is_client_ssl_capable(DCB *dcb);
-static int max_admin_auth_authenticate(DCB *dcb);
-static void max_admin_auth_free_client_data(DCB *dcb);
+static int max_admin_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf);
+static bool max_admin_auth_is_client_ssl_capable(void *instance, DCB *dcb);
+static int max_admin_auth_authenticate(void *instance, DCB *dcb);
+static void max_admin_auth_free_client_data(void *instance, DCB *dcb);
 
 /*
  * The "module object" for mysql client authenticator module.
  */
 static GWAUTHENTICATOR MyObject =
 {
+    NULL,                                 /* No initialize entry point */
     NULL,                                 /* No create entry point */
     max_admin_auth_set_protocol_data,     /* Extract data into structure   */
     max_admin_auth_is_client_ssl_capable, /* Check if client supports SSL  */
@@ -113,7 +114,7 @@ GWAUTHENTICATOR* GetModuleObject()
  * @return Authentication status - always 0 to denote success
  */
 static int
-max_admin_auth_authenticate(DCB *dcb)
+max_admin_auth_authenticate(void *instance, DCB *dcb)
 {
     return (dcb->data != NULL && ((ADMIN_session *)dcb->data)->validated) ? 0 : 1;
 }
@@ -129,11 +130,11 @@ max_admin_auth_authenticate(DCB *dcb)
  * @return Authentication status - 0 for success, 1 for failure
  */
 static int
-max_admin_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
+max_admin_auth_set_protocol_data(void *instance, DCB *dcb, GWBUF *buf)
 {
     ADMIN_session *session_data;
 
-    max_admin_auth_free_client_data(dcb);
+    max_admin_auth_free_client_data(instance, dcb);
 
     if ((session_data = (ADMIN_session *)MXS_CALLOC(1, sizeof(ADMIN_session))) != NULL)
     {
@@ -166,7 +167,7 @@ max_admin_auth_set_protocol_data(DCB *dcb, GWBUF *buf)
  * @return Boolean indicating whether client is SSL capable - false
  */
 static bool
-max_admin_auth_is_client_ssl_capable(DCB *dcb)
+max_admin_auth_is_client_ssl_capable(void *instance, DCB *dcb)
 {
     return false;
 }
@@ -180,7 +181,7 @@ max_admin_auth_is_client_ssl_capable(DCB *dcb)
  * @param dcb Request handler DCB connected to the client
  */
 static void
-max_admin_auth_free_client_data(DCB *dcb)
+max_admin_auth_free_client_data(void *instance, DCB *dcb)
 {
     MXS_FREE(dcb->data);
 }

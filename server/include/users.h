@@ -65,8 +65,10 @@ extern int users_delete(USERS *, char *);         /**< Delete a user from the us
 extern char *users_fetch(USERS *, char *);        /**< Fetch the authentication data for a user */
 extern int users_update(USERS *, char *, char *); /**< Change the password data for a user in
                                                      the users table */
-extern int users_default_loadusers(SERV_LISTENER *port); /**< A generic implementation of the authenticator
-                                                          * loadusers entry point */
+
+/**< A generic implementation of the authenticator loadUsers entry point */
+extern int users_default_loadusers(void *instance, SERV_LISTENER *port);
+
 extern void usersPrint(USERS *);                  /**< Print data about the users loaded */
 extern void dcb_usersPrint(DCB *, USERS *);       /**< Print data about the users loaded */
 

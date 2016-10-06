@@ -288,6 +288,9 @@ serviceStartPort(SERVICE *service, SERV_LISTENER *port)
 
     memcpy(&port->listener->authfunc, authfuncs, sizeof(GWAUTHENTICATOR));
 
+    /** Initialize the authenticator */
+    listener_init_authenticator(port);
+
     /**
      * Normally, we'd allocate the DCB specific authentication data. As the
      * listeners aren't normal DCBs, we can skip that.
@@ -303,9 +306,9 @@ serviceStartPort(SERVICE *service, SERV_LISTENER *port)
     }
 
     /** Load the authentication users before before starting the listener */
-    if (port->listener->authfunc.loadusers &&
+    if (port->listener->authfunc.loadUsers &&
         (service->router->getCapabilities() & RCAP_TYPE_NO_USERS_INIT) == 0 &&
-        port->listener->authfunc.loadusers(port) != MXS_AUTH_LOADUSERS_OK)
+        port->listener->authfunc.loadUsers(port->instance, port) != MXS_AUTH_LOADUSERS_OK)
     {
         MXS_ERROR("[%s] Failed to load users for listener '%s', authentication might not work.",
                   service->name, port->name);
@@ -672,11 +675,12 @@ service_free(SERVICE *service)
  * @return      TRUE if the protocol/port could be added
  */
 int
-serviceAddProtocol(SERVICE *service, char *name, char *protocol, char *address, unsigned short port, char *authenticator,
+serviceAddProtocol(SERVICE *service, char *name, char *protocol, char *address,
+                   unsigned short port, char *authenticator, char *options,
                    SSL_LISTENER *ssl)
 {
     SERV_LISTENER *proto = listener_alloc(service, name, protocol, address,
-                                          port, authenticator, ssl);
+                                          port, authenticator, options, ssl);
 
     if (proto)
     {
@@ -1462,8 +1466,8 @@ int service_refresh_users(SERVICE *service)
 
             for (SERV_LISTENER *port = service->ports; port; port = port->next)
             {
-                if (port->listener->authfunc.loadusers &&
-                    port->listener->authfunc.loadusers(port) != MXS_AUTH_LOADUSERS_OK)
+                if (port->listener->authfunc.loadUsers &&
+                    port->listener->authfunc.loadUsers(port->instance, port) != MXS_AUTH_LOADUSERS_OK)
                 {
                     MXS_ERROR("[%s] Failed to load users for listener '%s', authentication might not work.",
                               service->name, port->name);

@@ -474,12 +474,13 @@ mxs_auth_state_t handle_server_response(DCB *dcb, GWBUF *buffer)
     MySQLProtocol *proto = (MySQLProtocol*)dcb->protocol;
     mxs_auth_state_t rval = proto->protocol_auth_state == MXS_AUTH_STATE_CONNECTED ?
                             MXS_AUTH_STATE_HANDSHAKE_FAILED : MXS_AUTH_STATE_FAILED;
+    void *inst = dcb->session->client_dcb->listener->instance;
 
-    int rc = dcb->authfunc.extract(dcb, buffer);
+    int rc = dcb->authfunc.extract(inst, dcb, buffer);
 
     if (rc == MXS_AUTH_SUCCEEDED || rc == MXS_AUTH_INCOMPLETE)
     {
-        switch (dcb->authfunc.authenticate(dcb))
+        switch (dcb->authfunc.authenticate(inst, dcb))
         {
             case MXS_AUTH_INCOMPLETE:
             case MXS_AUTH_SSL_INCOMPLETE:
